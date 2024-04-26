@@ -273,12 +273,12 @@ typedef struct
     // float real_vy;
     // float real_wz;
     // 底盘反馈数据
-    uint8_t is_video_link; // 是否有图传链路
-    uint16_t shoot_heat;   // 枪口热量
-    uint16_t shoot_limit;  // 枪口热量上限
-    Gimbal_Ctrl_Cmd_s gimbal_ctrl_cmd;
-    Shoot_Ctrl_Cmd_s shoot_ctrl_cmd;
-    Bullet_Speed_e bullet_speed; // 弹速限制
+    // uint8_t is_video_link; // 是否有图传链路
+    uint16_t shoot_heat;  // 枪口热量
+    uint16_t shoot_limit; // 枪口热量上限
+    // Gimbal_Ctrl_Cmd_s gimbal_ctrl_cmd;
+    // Shoot_Ctrl_Cmd_s shoot_ctrl_cmd;
+    // Bullet_Speed_e bullet_speed; // 弹速限制
 
 } Chassis_Upload_Data_s;
 
