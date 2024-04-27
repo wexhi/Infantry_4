@@ -28,8 +28,20 @@
 #define VISION_USE_VCP // 是否使用虚拟串口
 // #define VISION_USE_UART // 是否使用硬件串口
 
-// #define VIDEO_LINKK // 是否有图传链路
+// #define VIDEO_LINK // 是否有图传链路
 #define REMOTE_LINK // 是否有常规链路
+
+/* 机器人重要参数定义,注意根据不同机器人进行修改,浮点数需要以.0或f结尾,无符号以u结尾 */
+// 云台参数
+#define YAW_CHASSIS_ALIGN_ECD     0     // 云台和底盘对齐指向相同方向时的电机编码器值,若对云台有机械改动需要修改
+#define YAW_ECD_GREATER_THAN_4096 0     // ALIGN_ECD值是否大于4096,是为1,否为0;用于计算云台偏转角度
+#define PITCH_HORIZON_ECD         2100  // 云台处于水平位置时编码器值,若对云台有机械改动需要修改
+#define PITCH_MAX_ANGLE           25.f  // 云台竖直方向最大角度 (注意反馈如果是陀螺仪，则填写陀螺仪的角度)
+#define PITCH_MIN_ANGLE           -10.f // 云台竖直方向最小角度 (注意反馈如果是陀螺仪，则填写陀螺仪的角度)
+// 发射参数
+#define ONE_BULLET_DELTA_ANGLE 45    // 发射一发弹丸拨盘转动的距离,由机械设计图纸给出
+#define REDUCTION_RATIO_LOADER 36.0f // 拨盘电机的减速比,英雄需要修改为3508的19.0f
+#define NUM_PER_CIRCLE         8     // 拨盘一圈的装载量
 
 // 检查是否出现主控板定义冲突,只允许一个开发板定义存在,否则编译会自动报错
 #if (defined(ONE_BOARD) && defined(CHASSIS_BOARD)) || \
@@ -91,11 +103,18 @@ typedef enum {
 } lid_mode_e;
 
 typedef enum {
+    NORMAL = 0, // 正常模式
+    VIOLENT,    // 狂暴模式, 提高单发射频
+} attack_mode_e;
+
+typedef enum {
     LOAD_STOP = 0, // 停止发射
     LOAD_REVERSE,  // 反转
     LOAD_SLOW,     // 慢速
     LOAD_MEDIUM,   // 中速
     LOAD_FAST,     // 快速
+    LOAD_1_BULLET, // 单发
+    LOAD_3_BULLET, // 三发
 } loader_mode_e;
 
 typedef enum {
@@ -189,10 +208,10 @@ typedef struct
     float wz;           // 旋转速度
     float offset_angle; // 底盘和归中位置的夹角
     chassis_mode_e chassis_mode;
-    float chassis_speed_buff;
     // UI部分
     ui_mode_e ui_mode;             //  UI状态
     friction_mode_e friction_mode; //  摩擦轮状态
+    loader_mode_e loader_mode;     //  射频状态
     vision_mode_e vision_mode;     //  视觉状态
     //  ...
 
@@ -252,8 +271,11 @@ typedef struct
     loader_mode_e load_mode;
     lid_mode_e lid_mode;
     friction_mode_e friction_mode;
-    uint8_t rest_heat;
+    Bullet_Speed_e bullet_speed; // 弹速枚举
+    int16_t rest_heat;
     float shoot_rate; // 连续发射的射频,unit per s,发/秒
+    float dead_time;  // 发射冷却时间, 目前仅单发使用
+    attack_mode_e attack_mode;
 } Shoot_Ctrl_Cmd_s;
 
 /* ----------------gimbal/shoot/chassis发布的反馈数据----------------*/
@@ -292,6 +314,12 @@ typedef struct
     float height;
     float roll;
 } Arm_Upload_Data_s;
+
+typedef struct
+{
+    // code to go here
+    // ...
+} Shoot_Upload_Data_s;
 
 typedef struct
 {

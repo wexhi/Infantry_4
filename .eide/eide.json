@@ -113,7 +113,9 @@
           "Bsp/USART",
           "Bsp/USB",
           "Module/motor/DJImotor",
-          "Module/motor/DMmotor"
+          "Module/motor/DMmotor",
+          "Application/gimbal",
+          "Application/shoot"
         ],
         "libList": [
           "Middlewares/ST/ARM/DSP/Lib"

@@ -16,11 +16,11 @@
 #include "bsp_usart.h"
 
 #define VISION_RECV_HEADER 0xA5u // 视觉接收数据帧头
-#define VISION_SEND_HEADER 0xA5u // 视觉发送数据帧头
+#define VISION_SEND_HEADER 0x5Au // 视觉发送数据帧头
 #define VISION_SEND_TAIL   0xAAu // 视觉发送数据帧尾
 
-#define VISION_RECV_SIZE   25u // 当前为固定值,25字节
-#define VISION_SEND_SIZE   1u
+#define VISION_RECV_SIZE   12u // 当前为固定值,12字节
+#define VISION_SEND_SIZE   19u
 
 // #pragma pack(1) // 1字节对齐
 
@@ -85,28 +85,24 @@ typedef struct
 typedef struct
 {
     uint8_t header;
-    float is_tracking; // 是否追踪
-    float maximal_arm;   // 大臂的目标值
-    float minimal_arm;   // 小臂的目标值
-    float z_height;      // 机械臂高度
-    float finesse;       // 手腕的目标值
-    float pitch_arm;     // pitch的目标值
-    float yaw;           // yaw的目标值,2006电机角度值
+    uint8_t is_tracking;
+    float yaw;
+    float pitch;
+    uint16_t checksum;
 } Vision_Recv_s;
 
 /* stm32 -> minipc (发送结构体) */
 typedef struct
 {
     uint8_t header;
-    /* 下面的数据暂时不需要 */
-    // uint8_t detect_color;  // 0-red 1-blue 发1
-    // uint8_t reset_tracker; // 是否重置追踪器 发0
-    // uint8_t is_shoot;      // 是否开启自瞄模式 开发 1
-    // float roll;            // rad
-    // float yaw;             // rad
-    // float pitch;           //
-    // uint16_t checksum;     // crc16校验位 https://blog.csdn.net/ydyuse/article/details/105395368
-    // uint8_t tail;          // 尾帧校验位
+    uint8_t detect_color;  // 0-red 1-blue 发1
+    uint8_t reset_tracker; // 是否重置追踪器 发0
+    uint8_t is_shoot;      // 是否开启自瞄模式 开发 1
+    float roll;            // rad
+    float yaw;             // rad
+    float pitch;           //
+    uint16_t checksum;     // crc16校验位 https://blog.csdn.net/ydyuse/article/details/105395368
+    uint8_t tail;          // 尾帧校验位
 } Vision_Send_s;
 #pragma pack() // 取消1字节对齐
 /* 视觉通信模块实例 */
@@ -148,7 +144,7 @@ Vision_Recv_s *VisionInit(UART_HandleTypeDef *video_usart_handle);
  *
  *
  */
-void VisionSend(uint8_t is_start);
+void VisionSend();
 
 /**
  * @brief 设置发送给视觉的IMU数据

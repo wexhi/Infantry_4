@@ -1,7 +1,6 @@
 #include "robot.h"
 #include "roboTask.h"
 #include "robot_def.h"
-#include "robot_cmd.h"
 #include "test.h"
 #include "chassis.h"
 
@@ -13,6 +12,15 @@
 #pragma message "check if you have configured the parameters in robot_def.h, IF NOT, please refer to the comments AND DO IT, otherwise the robot will have FATAL ERRORS!!!"
 #endif // !ROBOT_DEF_PARAM_WARNING
 
+#if defined(ONE_BOARD) || defined(CHASSIS_BOARD)
+#include "chassis.h"
+#endif
+
+#if defined(ONE_BOARD) || defined(GIMBAL_BOARD)
+#include "gimbal.h"
+#include "shoot.h"
+#include "robot_cmd.h"
+#endif
 /**
  * @brief 机器人初始化
  *
@@ -26,16 +34,15 @@ void RobotInit(void)
     // BSP初始化
     BSPInit();
     // 应用层初始化
+#if defined(ONE_BOARD) || defined(GIMBAL_BOARD)
     RobotCMDInit();
-// 机械臂初始化
-#ifdef ARM_BOARD
-    ArmInit();
-#endif // ARM_BOARD
-    // 底盘初始化
-#ifdef CHASSIS_BOARD
-    ChassisInit();
-#endif // CHASSIS_BOARD
+    GimbalInit();
+    ShootInit();
+#endif
 
+#if defined(ONE_BOARD) || defined(CHASSIS_BOARD)
+    ChassisInit();
+#endif
     // 测试代码
     // TESTInit();
 
@@ -51,16 +58,15 @@ void RobotInit(void)
  */
 void RobotTask()
 {
-    // 应用层任务
+#if defined(ONE_BOARD) || defined(GIMBAL_BOARD)
     RobotCMDTask();
-    // 机械臂任务
-#ifdef ARM_BOARD
-    ARMTask();
-#endif // ARM_BOARD
-    // 底盘任务
-#ifdef CHASSIS_BOARD
+    GimbalTask();
+    ShootTask();
+#endif
+
+#if defined(ONE_BOARD) || defined(CHASSIS_BOARD)
     ChassisTask();
-#endif // CHASSIS_BOARD
+#endif
 }
 
 /*  下面为测试代码,可忽略    */

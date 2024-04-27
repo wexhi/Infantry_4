@@ -179,17 +179,14 @@ void DJIMotorControl(void)
     float pid_measure, pid_ref;             // 电机PID测量值和设定值
 
     // 遍历所有电机实例,进行串级PID的计算并设置发送报文的值
-    for (size_t i = 0; i < idx; i++) {
-        // 减小访存开销,先保存指针引用
+    for (size_t i = 0; i < idx; ++i) { // 减小访存开销,先保存指针引用
         motor            = dji_motor_instances[i];
         motor_setting    = &motor->motor_settings;
         motor_controller = &motor->motor_controller;
         measure          = &motor->measure;
         pid_ref          = motor_controller->pid_ref; // 保存设定值,防止motor_controller->pid_ref在计算过程中被修改
-
-        if (motor_setting->motor_reverse_flag == MOTOR_DIRECTION_REVERSE) {
-            pid_ref = -pid_ref; // 如果电机反转,则将设定值反向
-        }
+        if (motor_setting->motor_reverse_flag == MOTOR_DIRECTION_REVERSE)
+            pid_ref *= -1; // 设置反转
 
         // pid_ref会顺次通过被启用的闭环充当数据的载体
         // 计算位置环,只有启用位置环且外层闭环为位置时会计算速度环输出
@@ -204,29 +201,26 @@ void DJIMotorControl(void)
 
         // 计算速度环,(外层闭环为速度或位置)且(启用速度环)时会计算速度环
         if ((motor_setting->close_loop_type & SPEED_LOOP) && (motor_setting->outer_loop_type & (ANGLE_LOOP | SPEED_LOOP))) {
-            if (motor_setting->feedforward_flag & SPEED_FEEDFORWARD) { // 速度前馈控制
+            if (motor_setting->feedforward_flag & SPEED_FEEDFORWARD)
                 pid_ref += *motor_controller->speed_feedforward_ptr;
-            }
-            if (motor_setting->speed_feedback_source == OTHER_FEED) { // 速度反馈
+
+            if (motor_setting->speed_feedback_source == OTHER_FEED)
                 pid_measure = *motor_controller->other_speed_feedback_ptr;
-            } else { // MOTOR_FEED
+            else // MOTOR_FEED
                 pid_measure = measure->speed_aps;
-            }
             // 更新pid_ref进入下一个环
             pid_ref = PIDCalculate(&motor_controller->speed_PID, pid_measure, pid_ref);
         }
 
         // 计算电流环,目前只要启用了电流环就计算,不管外层闭环是什么,并且电流只有电机自身传感器的反馈
-        if (motor_setting->feedforward_flag & CURRENT_FEEDFORWARD) { // 电流前馈控制
+        if (motor_setting->feedforward_flag & CURRENT_FEEDFORWARD)
             pid_ref += *motor_controller->current_feedforward_ptr;
-        }
-        if (motor_setting->close_loop_type & CURRENT_LOOP) { // 电流环
+        if (motor_setting->close_loop_type & CURRENT_LOOP) {
             pid_ref = PIDCalculate(&motor_controller->current_PID, measure->real_current, pid_ref);
         }
 
-        if (motor_setting->feedback_reverse_flag == FEEDBACK_DIRECTION_REVERSE) {
+        if (motor_setting->feedback_reverse_flag == FEEDBACK_DIRECTION_REVERSE)
             pid_ref *= -1;
-        }
 
         // 获取最终输出
         set = (int16_t)pid_ref;
@@ -238,9 +232,8 @@ void DJIMotorControl(void)
         sender_assignment[group].tx_buff[2 * num + 1] = (uint8_t)(set & 0x00ff); // 高八位
 
         // 若该电机处于停止状态,直接将buff置零
-        if (motor->stop_flag == MOTOR_STOP) {
-            memset(sender_assignment[group].tx_buff + 2 * num, 0, 16u);
-        }
+        if (motor->stop_flag == MOTOR_STOP)
+            memset(sender_assignment[group].tx_buff + 2 * num, 0, 2u);
     }
 
     // 遍历flag,检查是否要发送这一帧报文

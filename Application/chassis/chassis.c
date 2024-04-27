@@ -11,9 +11,11 @@
 #include "arm_math.h"
 
 #ifdef CHASSIS_BOARD
+#include "ins_task.h"
 #include "C_comm.h"
 static CAN_Comm_Instance *chasiss_can_comm; // 用于底盘的CAN通信
-#endif                                      // CHASSIS_BOARD
+attitude_t *Chassis_IMU_data;
+#endif // CHASSIS_BOARD
 #ifdef ONE_BOARD
 static Publisher_t *chassis_pub;  // 用于发布底盘的数据
 static Subscriber_t *chassis_sub; // 用于订阅底盘的控制命令
@@ -29,11 +31,17 @@ static DJIMotor_Instance *motor_lf, *motor_rf, *motor_lb, *motor_rb; // left rig
 static float chassis_vx, chassis_vy;     // 将云台系的速度投影到底盘
 static float vt_lf, vt_rf, vt_lb, vt_rb; // 底盘速度解算后的临时输出,待进行限幅
 
+#ifdef CHASSIS_MCNAMEE_WHEEL
+#define CHASSIS_WHEEL_OFFSET 1.0f // 机器人底盘轮子修正偏移量
+#elif defined(CHASSIS_OMNI_WHEEL)
+#define CHASSIS_WHEEL_OFFSET 0.7071f // 机器人底盘轮子修正偏移量，根号2/2，即45度，用于修正全向轮的安装位置
+#endif                               // CHASSIS_OMNI_WHEEL
+
 void ChassisInit()
 {
     // 四个轮子的参数一样,改tx_id和反转标志位即可
     Motor_Init_Config_s chassis_motor_config = {
-        .can_init_config.can_handle   = &hcan2,
+        .can_init_config.can_handle   = &hcan1,
         .controller_param_init_config = {
             .speed_PID = {
                 .Kp            = 15,   // 4.5
@@ -79,6 +87,7 @@ void ChassisInit()
 
     referee_data = UITaskInit(&huart6, &ui_data); // 裁判系统初始化,会同时初始化UI
 #ifdef CHASSIS_BOARD
+    Chassis_IMU_data                 = INS_Init(); // 底盘IMU初始化
     CAN_Comm_Init_Config_s comm_conf = {
         .can_config = {
             .can_handle = &hcan2,
@@ -103,10 +112,10 @@ void ChassisInit()
  */
 static void MecanumCalculate()
 {
-    vt_lf = chassis_vx + chassis_vy - chassis_cmd_recv.wz;
-    vt_rf = chassis_vx - chassis_vy - chassis_cmd_recv.wz;
-    vt_lb = -chassis_vx + chassis_vy - chassis_cmd_recv.wz;
-    vt_rb = -chassis_vx - chassis_vy - chassis_cmd_recv.wz;
+    vt_lf = (-chassis_vx + chassis_vy) * CHASSIS_WHEEL_OFFSET - chassis_cmd_recv.wz; // 1
+    vt_rf = (-chassis_vx - chassis_vy) * CHASSIS_WHEEL_OFFSET - chassis_cmd_recv.wz; // 2
+    vt_rb = (chassis_vx - chassis_vy) * CHASSIS_WHEEL_OFFSET - chassis_cmd_recv.wz;  // 3
+    vt_lb = (chassis_vx + chassis_vy) * CHASSIS_WHEEL_OFFSET - chassis_cmd_recv.wz;  // 4
 }
 
 /**
@@ -127,12 +136,14 @@ static void LimitChassisOutput()
 /* 机器人底盘控制核心任务 */
 void ChassisTask()
 {
+    // 后续增加没收到消息的处理(双板的情况)
+    // 获取新的控制信息
 #ifdef ONE_BOARD
     SubGetMessage(chassis_sub, &chassis_cmd_recv);
 #endif
 #ifdef CHASSIS_BOARD
     chassis_cmd_recv = *(Chassis_Ctrl_Cmd_s *)CANCommGet(chasiss_can_comm);
-#endif                                                         // CHASSIS_BOARD
+#endif                                                         // CHASSIS_BOARD                                                    // CHASSIS_BOARD
     if (chassis_cmd_recv.chassis_mode == CHASSIS_ZERO_FORCE) { // 如果出现重要模块离线或遥控器设置为急停,让电机停止
         DJIMotorStop(motor_lf);
         DJIMotorStop(motor_rf);
@@ -158,15 +169,19 @@ void ChassisTask()
     // 根据裁判系统的反馈数据和电容数据对输出限幅并设定闭环参考值
     LimitChassisOutput();
 
-    ui_data.ui_mode      = chassis_cmd_recv.ui_mode;
-    ui_data.chassis_mode = chassis_cmd_recv.chassis_mode;
+    chassis_feedback_data.shoot_heat  = referee_data->PowerHeatData.shooter_17mm_1_barrel_heat;
+    chassis_feedback_data.shoot_limit = referee_data->GameRobotState.shooter_barrel_heat_limit;
+
+    ui_data.ui_mode       = chassis_cmd_recv.ui_mode;
+    ui_data.chassis_mode  = chassis_cmd_recv.chassis_mode;
     ui_data.friction_mode = chassis_cmd_recv.friction_mode;
     ui_data.vision_mode   = chassis_cmd_recv.vision_mode;
 
+    // 推送反馈消息
+#ifdef ONE_BOARD
+    PubPushMessage(chassis_pub, (void *)&chassis_feedback_data);
+#endif
 #ifdef CHASSIS_BOARD
     CANCommSend(chasiss_can_comm, (void *)&chassis_feedback_data);
-#endif
-#ifdef ONE_BOARD
-    PubPushMessage(chassis_pub, &chassis_feedback_data);
-#endif
+#endif // CHASSIS_BOARD
 }
