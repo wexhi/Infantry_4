@@ -2,7 +2,6 @@
 #include "stdlib.h"
 #include "string.h"
 
-
 /* message_center是fake head node,是方便链表编写的技巧,这样就不需要处理链表头的特殊情况 */
 static Publisher_t message_center = {
     .topic_name      = "Message_Manager",
@@ -81,8 +80,9 @@ uint8_t SubGetMessage(Subscriber_t *sub, void *data_ptr)
         return 0;
     }
     memcpy(data_ptr, sub->queue[sub->front_idx], sub->data_len);
-    sub->front_idx = (sub->front_idx++) % QUEUE_SIZE; // 队列头索引增加
-    sub->temp_size--;                                 // pop一个数据,长度减1
+    sub->front_idx++;
+    sub->front_idx %= QUEUE_SIZE; // 队列头索引增加
+    sub->temp_size--;             // pop一个数据,长度减1
     return 1;
 }
 

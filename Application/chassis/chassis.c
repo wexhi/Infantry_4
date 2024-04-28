@@ -150,10 +150,10 @@ void ChassisTask()
         DJIMotorStop(motor_lb);
         DJIMotorStop(motor_rb);
     } else { // 正常工作
-        DJIMotorEnable(motor_lf);
-        DJIMotorEnable(motor_rf);
-        DJIMotorEnable(motor_lb);
-        DJIMotorEnable(motor_rb);
+        // DJIMotorEnable(motor_lf);
+        // DJIMotorEnable(motor_rf);
+        // DJIMotorEnable(motor_lb);
+        // DJIMotorEnable(motor_rb);
     }
     // 根据云台和底盘的角度offset将控制量映射到底盘坐标系上
     // 底盘逆时针旋转为角度正方向;云台命令的方向以云台指向的方向为x,采用右手系(x指向正北时y在正东)

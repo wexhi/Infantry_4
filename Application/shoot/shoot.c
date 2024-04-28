@@ -1,6 +1,7 @@
 #include "shoot.h"
 #include "robot_def.h"
 
+#include "tim.h"
 #include "dji_motor.h"
 #include "message_center.h"
 #include "bsp_dwt.h"
@@ -55,10 +56,10 @@ void ShootInit()
             .motor_reverse_flag = MOTOR_DIRECTION_NORMAL,
         },
         .motor_type = M3508};
-    friction_config.can_init_config.tx_id = 2,
+    friction_config.can_init_config.tx_id = 3,
     friction_l                            = DJIMotorInit(&friction_config);
 
-    friction_config.can_init_config.tx_id                             = 3; // 右摩擦轮,改txid和方向就行
+    friction_config.can_init_config.tx_id                             = 2; // 右摩擦轮,改txid和方向就行
     friction_config.controller_setting_init_config.motor_reverse_flag = MOTOR_DIRECTION_REVERSE;
     friction_r                                                        = DJIMotorInit(&friction_config);
 
@@ -106,6 +107,9 @@ void ShootInit()
     };
     loader = DJIMotorInit(&loader_config);
 
+    HAL_TIM_Base_Start(&htim1); // 开启定时器1
+    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+
     shoot_pub = PubRegister("shoot_feed", sizeof(Shoot_Upload_Data_s));
     shoot_sub = SubRegister("shoot_cmd", sizeof(Shoot_Ctrl_Cmd_s));
 }
@@ -115,7 +119,9 @@ void ShootTask()
 {
     // 从cmd获取控制数据
     SubGetMessage(shoot_sub, &shoot_cmd_recv);
-
+    DJIMotorStop(friction_l);
+    DJIMotorStop(friction_r);
+    DJIMotorStop(loader);
     // 对shoot mode等于SHOOT_STOP的情况特殊处理,直接停止所有电机(紧急停止)
     if (shoot_cmd_recv.shoot_mode == SHOOT_OFF) {
         DJIMotorStop(friction_l);
@@ -196,9 +202,9 @@ void ShootTask()
 
     // 开关弹舱盖
     if (shoot_cmd_recv.lid_mode == LID_CLOSE) {
-        //...
+        __HAL_TIM_SetCompare(&htim1, TIM_CHANNEL_1, 500);
     } else if (shoot_cmd_recv.lid_mode == LID_OPEN) {
-        //...
+        __HAL_TIM_SetCompare(&htim1, TIM_CHANNEL_1, 500); //2500关，500开
     }
 
     // 反馈数据,目前暂时没有要设定的反馈数据,后续可能增加应用离线监测以及卡弹反馈
