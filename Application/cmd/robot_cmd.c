@@ -18,12 +18,10 @@
 // module layer
 #include "remote.h"
 #include "miniPC_process.h"
-#include "VideoTransmitter.h"
 #include "message_center.h"
 #include "user_lib.h"
 #include "miniPC_process.h"
 #include "referee_protocol.h"
-#include "scara_kinematics.h"
 #include "arm_math.h"
 #include "DJI_motor.h"
 
@@ -43,7 +41,11 @@ static Subscriber_t *chassis_feed_sub; // 底盘反馈信息订阅者
 #endif
 static Vision_Recv_s *vision_ctrl; // 视觉控制信息
 static RC_ctrl_t *rc_data;         // 遥控器数据指针,初始化时返回
-static Video_ctrl_t *video_data;   // 视觉数据指针,初始化时返回
+// 若使用图传链路,则需要初始化图传链路
+#ifdef VIDEO_LINK
+#include "VideoTransmitter.h"
+static Video_ctrl_t *video_data; // 视觉数据指针,初始化时返回
+#endif
 
 static Chassis_Ctrl_Cmd_s chassis_cmd_send;      // 发送给底盘应用的信息,包括控制信息和UI绘制相关
 static Chassis_Upload_Data_s chassis_fetch_data; // 从底盘应用接收的反馈信息信息,底盘功率枪口热量与底盘运动状态等
@@ -74,9 +76,11 @@ static Robot_Status_e robot_state; // 机器人整体工作状态
 void RobotCMDInit(void)
 {
     // 初始化遥控器,使用串口3
-    rc_data         = RemoteControlInit(&huart3);           // 初始化遥控器,C板上使用USART3
-    video_data      = VideoTransmitterControlInit(&huart6); // 初始化图传链路
-    vision_ctrl     = VisionInit(&huart1);                  // 初始化视觉控制
+    rc_data = RemoteControlInit(&huart3); // 初始化遥控器,C板上使用USART3
+#ifdef VIDEO_LINK
+    video_data = VideoTransmitterControlInit(&huart6); // 初始化图传链路
+#endif
+    vision_ctrl     = VisionInit(&huart1); // 初始化视觉控制
     gimbal_cmd_pub  = PubRegister("gimbal_cmd", sizeof(Gimbal_Ctrl_Cmd_s));
     gimbal_feed_sub = SubRegister("gimbal_feed", sizeof(Gimbal_Upload_Data_s));
     shoot_cmd_pub   = PubRegister("shoot_cmd", sizeof(Shoot_Ctrl_Cmd_s));
@@ -224,9 +228,9 @@ static void RemoteControlSet(void)
 
     // 发射参数
     if (switch_is_down(rc_data[TEMP].rc.switch_left)) // 左侧开关状态[上],弹舱打开
-        ;                                             // 弹舱舵机控制,待添加servo_motor模块,开启
+        shoot_cmd_send.lid_mode = LID_OPEN;           // 弹舱舵机控制,待添加servo_motor模块,开启
     else
-        ; // 弹舱舵机控制,待添加servo_motor模块,关闭     // _水平方向
+        shoot_cmd_send.lid_mode = LID_CLOSE; // 弹舱舵机控制,待添加servo_motor模块,关闭     // _水平方向
 
     // 摩擦轮控制,拨轮向上打为负,向下为正
     if (switch_is_mid(rc_data[TEMP].rc.switch_left) || switch_is_up(rc_data[TEMP].rc.switch_left)) // 向上超过100,打开摩擦轮
@@ -256,6 +260,14 @@ static void MouseKeySet(void)
     gimbal_cmd_send.gimbal_mode = GIMBAL_GYRO_MODE;
 
 #ifdef REMOTE_LINK
+    switch (rc_data[TEMP].key_count[KEY_PRESS_WITH_CTRL][Key_X] % 2) {
+        case 0:
+            EmergencyHandler();
+            return; // 当没有按下激活键时,直接返回
+        default:
+            break; // 当按下激活键时,继续执行
+    }
+
     switch (rc_data[TEMP].key_count[KEY_PRESS][Key_C] % 3) {
         case 0:
             chassis_speed_buff            = 0.5f;
@@ -272,7 +284,7 @@ static void MouseKeySet(void)
             break;
     }
 
-    chassis_cmd_send.vx = (rc_data[TEMP].key[KEY_PRESS].a - rc_data[TEMP].key[KEY_PRESS].d) * 16000 * chassis_speed_buff; // 系数待测
+    chassis_cmd_send.vx = (rc_data[TEMP].key[KEY_PRESS].d - rc_data[TEMP].key[KEY_PRESS].a) * 16000 * chassis_speed_buff; // 系数待测
     chassis_cmd_send.vy = (rc_data[TEMP].key[KEY_PRESS].w - rc_data[TEMP].key[KEY_PRESS].s) * 16000 * chassis_speed_buff;
     chassis_cmd_send.wz = rc_data[TEMP].key[KEY_PRESS].shift * 6000 * chassis_speed_buff;
 
@@ -313,7 +325,7 @@ static void MouseKeySet(void)
             break;
     }
 
-    switch (rc_data[TEMP].key_count[KEY_PRESS][Key_B] % 2) // B键切换发弹模式
+    switch (rc_data[TEMP].key_count[KEY_PRESS][Key_B] % 4) // B键切换发弹模式
     {
         case 0:
             shoot_cmd_send.load_mode  = LOAD_SLOW;
@@ -332,8 +344,8 @@ static void MouseKeySet(void)
             break;
     }
     // 当左键松开时停止发射，当摩擦轮关闭时停止发射,当剩余热量为0时停止发射
-    if (!rc_data[TEMP].mouse.press_l &&
-        shoot_cmd_send.friction_mode == FRICTION_OFF &&
+    if (!rc_data[TEMP].mouse.press_l ||
+        shoot_cmd_send.friction_mode == FRICTION_OFF ||
         shoot_cmd_send.rest_heat <= 0) {
         shoot_cmd_send.load_mode = LOAD_STOP;
     }
@@ -355,6 +367,13 @@ static void MouseKeySet(void)
 #endif
 
 #ifdef VIDEO_LINK
+    switch (video_data[TEMP].key_count[KEY_PRESS_WITH_CTRL][Key_X] % 2) {
+        case 0:
+            EmergencyHandler();
+            return; // 当没有按下激活键时,直接返回
+        default:
+            break; // 当按下激活键时,继续执行
+    }
 
     switch (video_data[TEMP].key_count[KEY_PRESS][Key_C] % 3) {
         case 0:
@@ -371,7 +390,7 @@ static void MouseKeySet(void)
             chassis_cmd_send.chassis_mode = CHASSIS_FAST;
             break;
     }
-    chassis_cmd_send.vx = (video_data[TEMP].key[KEY_PRESS].a - video_data[TEMP].key[KEY_PRESS].d) * 16000 * chassis_speed_buff; // 系数待测
+    chassis_cmd_send.vx = (video_data[TEMP].key[KEY_PRESS].d - video_data[TEMP].key[KEY_PRESS].a) * 16000 * chassis_speed_buff; // 系数待测
     chassis_cmd_send.vy = (video_data[TEMP].key[KEY_PRESS].w - video_data[TEMP].key[KEY_PRESS].s) * 16000 * chassis_speed_buff;
     chassis_cmd_send.wz = video_data[TEMP].key[KEY_PRESS].shift * 6000 * chassis_speed_buff;
 
@@ -412,7 +431,7 @@ static void MouseKeySet(void)
             break;
     }
 
-    switch (video_data[TEMP].key_count[KEY_PRESS][Key_B] % 2) // B键切换发弹模式
+    switch (video_data[TEMP].key_count[KEY_PRESS][Key_B] % 4) // B键切换发弹模式
     {
         case 0:
             shoot_cmd_send.load_mode  = LOAD_SLOW;
@@ -431,9 +450,9 @@ static void MouseKeySet(void)
             break;
     }
 
-    if (!video_data[TEMP].key_data.left_button_down &&
-        shoot_cmd_send.friction_mode == FRICTION_OFF &&
-        shoot_cmd_send.rest_heat > 0) {
+    if (!video_data[TEMP].key_data.left_button_down ||
+        shoot_cmd_send.friction_mode == FRICTION_OFF ||
+        shoot_cmd_send.rest_heat <= 0) {
         shoot_cmd_send.load_mode = LOAD_STOP;
     }
 

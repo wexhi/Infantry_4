@@ -4,7 +4,6 @@
 #include "bsp_dwt.h"
 #include <math.h>
 
-
 float BMI088_ACCEL_SEN = BMI088_ACCEL_6G_SEN;
 float BMI088_GYRO_SEN  = BMI088_GYRO_2000_SEN;
 
@@ -120,7 +119,7 @@ void Calibrate_MPU_Offset(IMU_Data_t *bmi088)
     uint8_t buf[8]            = {0, 0, 0, 0, 0, 0};
     int16_t bmi088_raw_temp;
     float gyroMax[3], gyroMin[3];
-    float gNormTemp, gNormMax, gNormMin;
+    float gNormTemp = 0.0f, gNormMax = 0.0f, gNormMin = 0.0f;
 
     startTime = DWT_GetTimeline_s();
     do {
@@ -241,7 +240,6 @@ uint8_t bmi088_accel_init(void)
 
     // check the "who am I"
     if (res != BMI088_ACC_CHIP_ID_VALUE) {
-        // LOGERROR("[bmi088] Can not read bmi088 acc chip id");
         return BMI088_NO_SENSOR;
     }
 
@@ -283,7 +281,6 @@ uint8_t bmi088_gyro_init(void)
 
     // check the "who am I"
     if (res != BMI088_GYRO_CHIP_ID_VALUE) {
-        // LOGERROR("[bmi088] Can not read bmi088 gyro chip id");
         return BMI088_NO_SENSOR;
     }
 

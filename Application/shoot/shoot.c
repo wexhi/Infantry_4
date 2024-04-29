@@ -31,9 +31,9 @@ void ShootInit()
         },
         .controller_param_init_config = {
             .speed_PID = {
-                .Kp            = 20, // 20
+                .Kp            = 10, // 20
                 .Ki            = 0,  // 1
-                .Kd            = 0.03,
+                .Kd            = 0,
                 .Improve       = PID_Integral_Limit,
                 .IntegralLimit = 10000,
                 .MaxOut        = 15000,
@@ -72,17 +72,17 @@ void ShootInit()
         .controller_param_init_config = {
             .angle_PID = {
                 // 如果启用位置环来控制发弹,需要较大的I值保证输出力矩的线性度否则出现接近拨出的力矩大幅下降
-                .Kp                = 300,
+                .Kp                = 50,
                 .Ki                = 0,
-                .Kd                = 20,
+                .Kd                = 0,
                 .Improve           = PID_Trapezoid_Intergral | PID_Integral_Limit | PID_Derivative_On_Measurement | PID_DerivativeFilter | PID_ErrorHandle,
                 .IntegralLimit     = 10000,
                 .MaxOut            = 15000,
                 .Derivative_LPF_RC = 0.01,
             },
             .speed_PID = {
-                .Kp            = 7, // 10
-                .Ki            = 0, // 1
+                .Kp            = 5, // 10
+                .Ki            = 100,   // 1
                 .Kd            = 0,
                 .Improve       = PID_Trapezoid_Intergral | PID_Integral_Limit | PID_Derivative_On_Measurement,
                 .IntegralLimit = 10000,
@@ -119,9 +119,6 @@ void ShootTask()
 {
     // 从cmd获取控制数据
     SubGetMessage(shoot_sub, &shoot_cmd_recv);
-    DJIMotorStop(friction_l);
-    DJIMotorStop(friction_r);
-    DJIMotorStop(loader);
     // 对shoot mode等于SHOOT_STOP的情况特殊处理,直接停止所有电机(紧急停止)
     if (shoot_cmd_recv.shoot_mode == SHOOT_OFF) {
         DJIMotorStop(friction_l);
@@ -129,9 +126,9 @@ void ShootTask()
         DJIMotorStop(loader);
     } else // 恢复运行
     {
-        // DJIMotorEnable(friction_l);
-        // DJIMotorEnable(friction_r);
-        // DJIMotorEnable(loader);
+        DJIMotorEnable(friction_l);
+        DJIMotorEnable(friction_r);
+        DJIMotorEnable(loader);
     }
 
     // 如果上一次触发单发或3发指令的时间加上不应期仍然大于当前时间(尚未休眠完毕),直接返回即可
@@ -149,7 +146,7 @@ void ShootTask()
         // 单发模式,根据鼠标按下的时间,触发一次之后需要进入不响应输入的状态(否则按下的时间内可能多次进入,导致多次发射)
         case LOAD_1_BULLET:                                                          // 激活能量机关/干扰对方用,英雄用.
             DJIMotorOuterLoop(loader, ANGLE_LOOP);                                   // 切换到角度环
-            loader_set_angle = loader->measure.total_angle - ONE_BULLET_DELTA_ANGLE; // 控制量增加一发弹丸的角度
+            loader_set_angle = loader->measure.total_angle - ONE_BULLET_DELTA_ANGLE * REDUCTION_RATIO_LOADER; // 控制量增加一发弹丸的角度
             DJIMotorSetRef(loader, loader_set_angle);
             hibernate_time = DWT_GetTimeline_ms();     // 记录触发指令的时间
             dead_time      = shoot_cmd_recv.dead_time; // 完成1发弹丸发射的时间
@@ -166,14 +163,14 @@ void ShootTask()
         case LOAD_MEDIUM:
         case LOAD_SLOW:
             DJIMotorOuterLoop(loader, SPEED_LOOP);
-            DJIMotorSetRef(loader, 1.0f * shoot_cmd_recv.shoot_rate * 360.0f * REDUCTION_RATIO_LOADER / 8.0f);
+            DJIMotorSetRef(loader, -1.0f * shoot_cmd_recv.shoot_rate * 360.0f * REDUCTION_RATIO_LOADER / 8.0f);
             // x颗/秒换算成速度: 已知一圈的载弹量,由此计算出1s需要转的角度,注意换算角速度(DJIMotor的速度单位是angle per second)
             break;
         // 拨盘反转,对速度闭环,后续增加卡弹检测(通过裁判系统剩余热量反馈和电机电流)
         // 也有可能需要从switch-case中独立出来
         case LOAD_REVERSE:
             DJIMotorOuterLoop(loader, SPEED_LOOP);
-            DJIMotorSetRef(loader, -shoot_cmd_recv.shoot_rate * 360 * REDUCTION_RATIO_LOADER / 16);
+            DJIMotorSetRef(loader, shoot_cmd_recv.shoot_rate * 360 * REDUCTION_RATIO_LOADER / 16);
             // ...
             break;
         default:
@@ -186,8 +183,8 @@ void ShootTask()
         // 根据收到的弹速设置设定摩擦轮电机参考值,需实测后填入
         switch (shoot_cmd_recv.bullet_speed) {
             case SMALL_AMU_30:
-                DJIMotorSetRef(friction_l, 26000);
-                DJIMotorSetRef(friction_r, 26000);
+                DJIMotorSetRef(friction_l, 40500);
+                DJIMotorSetRef(friction_r, 40500);
                 break;
             default: // 当前为了调试设定的默认值4000,因为还没有加入裁判系统无法读取弹速.
                 DJIMotorSetRef(friction_l, 20000);
@@ -204,7 +201,7 @@ void ShootTask()
     if (shoot_cmd_recv.lid_mode == LID_CLOSE) {
         __HAL_TIM_SetCompare(&htim1, TIM_CHANNEL_1, 500);
     } else if (shoot_cmd_recv.lid_mode == LID_OPEN) {
-        __HAL_TIM_SetCompare(&htim1, TIM_CHANNEL_1, 500); //2500关，500开
+        __HAL_TIM_SetCompare(&htim1, TIM_CHANNEL_1, 2500); // 2500关，500开
     }
 
     // 反馈数据,目前暂时没有要设定的反馈数据,后续可能增加应用离线监测以及卡弹反馈

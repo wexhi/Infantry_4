@@ -281,6 +281,8 @@ static void MotorSenderGrouping(DJIMotor_Instance *motor, CAN_Init_Config_s *can
                 if (dji_motor_instances[i]->motor_can_instance->can_handle == can_config->can_handle && dji_motor_instances[i]->motor_can_instance->rx_id == can_config->rx_id) {
                     // id冲突,进入错误处理
                     uint16_t can_bus __attribute__((unused)) = can_config->can_handle == &hcan1 ? 1 : 2;
+                    while (1)
+                        ;
                 }
             }
             break;
@@ -303,12 +305,15 @@ static void MotorSenderGrouping(DJIMotor_Instance *motor, CAN_Init_Config_s *can
                 if (dji_motor_instances[i]->motor_can_instance->can_handle == can_config->can_handle && dji_motor_instances[i]->motor_can_instance->rx_id == can_config->rx_id) {
                     // id冲突,进入错误处理
                     uint16_t can_bus __attribute__((unused)) = can_config->can_handle == &hcan1 ? 1 : 2;
+                    while (1)
+                        ;
                 }
             }
             break;
 
         default:
-            break;
+            while (1)
+                ;
     }
 }
 

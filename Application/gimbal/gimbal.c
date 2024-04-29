@@ -26,7 +26,7 @@ void GimbalInit()
             .angle_PID = {
                 .Kp                = 0.285,
                 .Ki                = 0.05,
-                .Kd                = 0.015,
+                .Kd                = 0.01,
                 .Improve           = PID_Trapezoid_Intergral | PID_Integral_Limit | PID_Derivative_On_Measurement | PID_DerivativeFilter | PID_ChangingIntegrationRate,
                 .IntegralLimit     = 10,
                 .CoefB             = 0.3,
@@ -64,8 +64,8 @@ void GimbalInit()
         },
         .controller_param_init_config = {
             .angle_PID = {
-                .Kp                = 0.3,
-                .Ki                = 1.5,
+                .Kp                = 0.4,
+                .Ki                = 0.5,
                 .Kd                = 0.02,
                 .Improve           = PID_Trapezoid_Intergral | PID_Integral_Limit | PID_Derivative_On_Measurement | PID_ChangingIntegrationRate | PID_OutputFilter,
                 .IntegralLimit     = 10,
@@ -95,7 +95,7 @@ void GimbalInit()
             .speed_feedback_source = OTHER_FEED,
             .outer_loop_type       = ANGLE_LOOP,
             .close_loop_type       = SPEED_LOOP | ANGLE_LOOP,
-            .feedback_reverse_flag = FEEDBACK_DIRECTION_REVERSE,
+            .feedback_reverse_flag = FEEDBACK_DIRECTION_NORMAL,
             .motor_reverse_flag    = MOTOR_DIRECTION_NORMAL,
         },
         .motor_type = GM6020,
@@ -114,8 +114,8 @@ void GimbalTask()
     // 获取云台控制数据
     // 后续增加未收到数据的处理
     SubGetMessage(gimbal_sub, &gimbal_cmd_recv);
-    DJIMotorStop(yaw_motor);
-    DJIMotorStop(pitch_motor);
+    // DJIMotorStop(yaw_motor);
+    // DJIMotorStop(pitch_motor);
 
     // @todo:现在已不再需要电机反馈,实际上可以始终使用IMU的姿态数据来作为云台的反馈,yaw电机的offset只是用来跟随底盘
     // 根据控制模式进行电机反馈切换和过渡,视觉模式在robot_cmd模块就已经设置好,gimbal只看yaw_ref和pitch_ref
@@ -127,14 +127,14 @@ void GimbalTask()
             break;
         // 使用陀螺仪的反馈,底盘根据yaw电机的offset跟随云台或视觉模式采用
         case GIMBAL_GYRO_MODE: // 后续只保留此模式
-            // DJIMotorEnable(yaw_motor);
-            // DJIMotorEnable(pitch_motor);
-            // DJIMotorChangeFeed(yaw_motor, ANGLE_LOOP, OTHER_FEED, &gimba_IMU_data->YawTotalAngle);
-            // DJIMotorChangeFeed(yaw_motor, SPEED_LOOP, OTHER_FEED, &gimba_IMU_data->Gyro[2]);
-            // DJIMotorChangeFeed(pitch_motor, ANGLE_LOOP, OTHER_FEED, &gimba_IMU_data->Roll);
-            // DJIMotorChangeFeed(pitch_motor, SPEED_LOOP, OTHER_FEED, &gimba_IMU_data->Gyro[1]);
-            // DJIMotorSetRef(yaw_motor, gimbal_cmd_recv.yaw); // yaw和pitch会在robot_cmd中处理好多圈和单圈
-            // DJIMotorSetRef(pitch_motor, gimbal_cmd_recv.pitch);
+            DJIMotorEnable(yaw_motor);
+            DJIMotorEnable(pitch_motor);
+            DJIMotorChangeFeed(yaw_motor, ANGLE_LOOP, OTHER_FEED, &gimba_IMU_data->YawTotalAngle);
+            DJIMotorChangeFeed(yaw_motor, SPEED_LOOP, OTHER_FEED, &gimba_IMU_data->Gyro[2]);
+            DJIMotorChangeFeed(pitch_motor, ANGLE_LOOP, OTHER_FEED, &gimba_IMU_data->Roll);
+            DJIMotorChangeFeed(pitch_motor, SPEED_LOOP, OTHER_FEED, &gimba_IMU_data->Gyro[1]);
+            DJIMotorSetRef(yaw_motor, gimbal_cmd_recv.yaw); // yaw和pitch会在robot_cmd中处理好多圈和单圈
+            DJIMotorSetRef(pitch_motor, gimbal_cmd_recv.pitch);
             break;
         // 云台自由模式,使用编码器反馈,底盘和云台分离,仅云台旋转,一般用于调整云台姿态(英雄吊射等)/能量机关
         case GIMBAL_FREE_MODE: // 后续删除,或加入云台追地盘的跟随模式(响应速度更快)
