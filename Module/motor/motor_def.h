@@ -13,6 +13,7 @@
 #define MOTOR_DEF_H
 
 #include "controller.h"
+#include "ramp_contorller.h"
 #include "stdint.h"
 
 #define LIMIT_MIN_MAX(x, min, max) (x) = (((x) <= (min)) ? (min) : (((x) >= (max)) ? (max) : (x)))
@@ -73,6 +74,12 @@ typedef enum {
     MOTOR_CONTROL_MIT_ONLY_TORQUE,
 } Motor_Controll_Type_e;
 
+/* 电机是否使用斜坡函数 */
+typedef enum {
+    MOTOR_RAMP_DISABLE = 0,
+    MOTOR_RAMP_ENABLE  = 1,
+} Motor_Ramp_Flag_e;
+
 /* 电机控制设置,包括闭环类型,反转标志和反馈来源 */
 typedef struct
 {
@@ -83,7 +90,8 @@ typedef struct
     Feedback_Source_e angle_feedback_source;       // 角度反馈类型
     Feedback_Source_e speed_feedback_source;       // 速度反馈类型
     Feedfoward_Type_e feedforward_flag;            // 前馈标志
-
+    Motor_Ramp_Flag_e angle_ramp_flag;             // 角度斜坡标志
+    Motor_Ramp_Flag_e speed_ramp_flag;             // 速度斜坡标志
 } Motor_Control_Setting_s;
 
 /* 电机控制器,包括其他来源的反馈数据指针,3环控制器和电机的参考输入*/
@@ -132,7 +140,9 @@ typedef struct
     PID_Init_Config_s current_PID;
     PID_Init_Config_s speed_PID;
     PID_Init_Config_s angle_PID;
-    PID_Init_Config_s dm_mit_PID; // MIT模式下的PID
+    PID_Init_Config_s dm_mit_PID;       // MIT模式下的PID
+    RampController_Config_s angle_ramp; // 斜坡控制器配置
+    RampController_Config_s speed_ramp; // 斜坡控制器配置
 } Motor_Controller_Init_s;
 
 /* 用于初始化CAN电机的结构体,各类电机通用 */

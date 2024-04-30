@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include "bsp_can.h"
 #include "controller.h"
+#include "ramp_contorller.h"
 #include "motor_def.h"
 #include "daemon.h"
 
@@ -37,12 +38,12 @@ typedef struct
 
 typedef struct
 {
-    uint16_t position_mit; // MIT模式下的位置值
-    uint16_t velocity_mit; // MIT模式下的速度值
+    uint16_t position_mit;    // MIT模式下的位置值
+    uint16_t velocity_mit;    // MIT模式下的速度值
     uint16_t position_torque; // MIT力控模式下的位置值
     uint16_t velocity_torque; // MIT力控模式下的速度值
-    float position_sp;     // 位置速度模式下的位置值
-    float velocity_sp;     // 位置速度模式下的速度值
+    float position_sp;        // 位置速度模式下的位置值
+    float velocity_sp;        // 位置速度模式下的速度值
     uint16_t torque_des;
     uint16_t Kp;
     uint16_t Kd;
@@ -67,6 +68,7 @@ typedef struct
     /* MIT模式下PID */ // T_kef = mit_kp * (p_des - θ_m) + mit_kd * (v_des - dθ) + t_ff
     float mit_kp;
     float mit_kd; // ! kd = 0不能在kd = 0时，否则会出现震荡甚至失控 ！！！
+    RampController_Instance angle_ramp;
     Motor_Controll_Type_e control_type;
     Motor_Working_Type_e stop_flag;
     CAN_Instance *motor_can_instace;
@@ -94,4 +96,7 @@ void DMMotorStop(DM_MotorInstance *motor);
 void DMMotorCaliEncoder(DM_MotorInstance *motor);
 void DMMotorClearErr(DM_MotorInstance *motor);
 void DMMotorControlInit();
+void DMMotorRampEnable(DM_MotorInstance *motor);
+void DMMotorRampDisable(DM_MotorInstance *motor);
+uint8_t DMMotorPositionCheck(DM_MotorInstance *motor, float ref);
 #endif // !DMMOTOR

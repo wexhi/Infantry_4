@@ -124,7 +124,8 @@
         "defineList": [
           "USE_HAL_DRIVER",
           "STM32F407xx",
-          "ARM_MATH_CM4"
+          "ARM_MATH_CM4",
+          "__FPU_PRESENT=1U"
         ]
       }
     }

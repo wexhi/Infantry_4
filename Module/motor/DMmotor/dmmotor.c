@@ -105,6 +105,7 @@ static void DMMotorConfigModel(DM_MotorInstance *motor, CAN_Init_Config_s *confi
     switch (motor->control_type) {
         case MOTOR_CONTROL_MIT:
         case MOTOR_CONTROL_MIT_ONLY_TORQUE:
+            config->tx_id = config->tx_id;
             break;
         case MOTOR_CONTROL_POSITION_AND_SPEED:
             config->tx_id = 0x100 + config->tx_id;
@@ -151,7 +152,10 @@ DM_MotorInstance *DMMotorInit(Motor_Init_Config_s *config)
     motor->other_speed_feedback_ptr = config->controller_param_init_config.other_speed_feedback_ptr;
     motor->mit_kp                   = config->controller_param_init_config.dm_mit_PID.Kp;
     motor->mit_kd                   = config->controller_param_init_config.dm_mit_PID.Kd;
-
+    motor->speed_feedforward_ptr    = config->controller_param_init_config.speed_feedforward_ptr;
+    motor->current_feedforward_ptr  = config->controller_param_init_config.current_feedforward_ptr;
+    motor->control_type             = config->control_type;
+    RampController_Init(&motor->angle_ramp, &config->controller_param_init_config.angle_ramp);
     if (motor->mit_kp != 0 && motor->mit_kd == 0) {
         while (1) // 进入死循环，请进行安全检查
             ;     // kd = 0不能在kd = 0时，否则会出现震荡甚至失控 ！！！
@@ -235,6 +239,38 @@ void DMMotorOuterLoop(DM_MotorInstance *motor, Closeloop_Type_e type)
 }
 
 /**
+ * @brief 设置电机斜坡激活
+ *
+ */
+void DMMotorRampEnable(DM_MotorInstance *motor)
+{
+    motor->motor_settings.angle_ramp_flag = MOTOR_RAMP_ENABLE;
+}
+
+/**
+ * @brief 设置电机斜坡关闭
+ *
+ */
+void DMMotorRampDisable(DM_MotorInstance *motor)
+{
+    motor->motor_settings.angle_ramp_flag = MOTOR_RAMP_DISABLE;
+}
+
+/**
+ * @brief 电机位置检查
+ *
+ * @param motor 电机实例
+ * @param ref 位置参考值
+ * @return uint8_t 1为在位置范围内，0为不在位置范围内
+ */
+uint8_t DMMotorPositionCheck(DM_MotorInstance *motor, float ref)
+{
+    if (motor->measure.position > ref - 0.08f && motor->measure.position < ref + 0.08f)
+        return 1;
+    return 0;
+}
+
+/**
  * @brief MIT模式下的电机控制
  *
  * @param motor 电机实例
@@ -243,6 +279,12 @@ void DMMotorOuterLoop(DM_MotorInstance *motor, Closeloop_Type_e type)
  */
 static void DMMotorMITContoroll(DM_MotorInstance *motor, float ref, DMMotor_Send_s *send)
 {
+    DM_Motor_Measure_s *measure = &motor->measure;
+    if (motor->motor_settings.angle_ramp_flag == MOTOR_RAMP_ENABLE) {
+        StartRamp(&motor->angle_ramp, measure->position, ref);
+        ref = UpdateRamp(&motor->angle_ramp);
+    }
+    send->position_sp = ref;
     LIMIT_MIN_MAX(ref, DM_P_MIN, DM_P_MAX);
     send->position_mit = float_to_uint(ref, DM_P_MIN, DM_P_MAX, 16);
     send->velocity_mit = float_to_uint(0, DM_V_MIN, DM_V_MAX, 12);
@@ -339,12 +381,19 @@ static void DMMotorMITOnlyTorqueContoroll(DM_MotorInstance *motor, float ref, DM
  */
 static void DMMotorPositonSpeedContoroll(DM_MotorInstance *motor, float pos_ref, float speed_ref, DMMotor_Send_s *send)
 {
-
+    DM_Motor_Measure_s *measure = &motor->measure;
+    float pos_target;
+    pos_target = pos_ref;
     if (motor->stop_flag == MOTOR_STOP)
         send->velocity_sp = 0;
     else
         send->velocity_sp = speed_ref;
-    send->position_sp = pos_ref;
+    if (motor->motor_settings.angle_ramp_flag == MOTOR_RAMP_ENABLE) {
+        StartRamp(&motor->angle_ramp, measure->position, pos_target);
+        pos_target = UpdateRamp(&motor->angle_ramp);
+    }
+    send->position_sp = pos_target;
+
     memcpy(motor->motor_can_instace->tx_buff, &send->position_sp, 4);
     memcpy(motor->motor_can_instace->tx_buff + 4, &send->velocity_sp, 4);
 }
