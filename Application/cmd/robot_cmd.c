@@ -222,9 +222,9 @@ static void RemoteControlSet(void)
         gimbal_cmd_send.pitch = PITCH_MIN_ANGLE;
 
     // 底盘参数,目前没有加入小陀螺(调试似乎暂时没有必要),系数需要调整
-    chassis_cmd_send.vx = 1000.0f * (float)rc_data[TEMP].rc.rocker_l_; // _水平方向
-    chassis_cmd_send.vy = 1000.0f * (float)rc_data[TEMP].rc.rocker_l1; // 1竖直方向
-    chassis_cmd_send.wz = -80.0f * (float)rc_data[TEMP].rc.dial;
+    chassis_cmd_send.vx = 200.0f * (float)rc_data[TEMP].rc.rocker_l_; // _水平方向
+    chassis_cmd_send.vy = 200.0f * (float)rc_data[TEMP].rc.rocker_l1; // 1竖直方向
+    chassis_cmd_send.wz = -30.0f * (float)rc_data[TEMP].rc.dial;
 
     // 发射参数
     if (switch_is_down(rc_data[TEMP].rc.switch_left)) // 左侧开关状态[上],弹舱打开
@@ -390,8 +390,8 @@ static void MouseKeySet(void)
             chassis_cmd_send.chassis_mode = CHASSIS_FAST;
             break;
     }
-    chassis_cmd_send.vx = (video_data[TEMP].key[KEY_PRESS].d - video_data[TEMP].key[KEY_PRESS].a) * 160000 * chassis_speed_buff; // 系数待测
-    chassis_cmd_send.vy = (video_data[TEMP].key[KEY_PRESS].w - video_data[TEMP].key[KEY_PRESS].s) * 160000 * chassis_speed_buff;
+    chassis_cmd_send.vx = (video_data[TEMP].key[KEY_PRESS].d - video_data[TEMP].key[KEY_PRESS].a) * 16000 * chassis_speed_buff; // 系数待测
+    chassis_cmd_send.vy = (video_data[TEMP].key[KEY_PRESS].w - video_data[TEMP].key[KEY_PRESS].s) * 16000 * chassis_speed_buff;
     chassis_cmd_send.wz = video_data[TEMP].key[KEY_PRESS].shift * 6000 * chassis_speed_buff;
 
     gimbal_cmd_send.yaw -= (float)video_data[TEMP].key_data.mouse_x / 660 * 1; // 系数待测
