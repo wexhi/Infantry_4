@@ -81,8 +81,8 @@ void ShootInit()
                 .Derivative_LPF_RC = 0.01,
             },
             .speed_PID = {
-                .Kp            = 5, // 10
-                .Ki            = 100,   // 1
+                .Kp            = 5,   // 10
+                .Ki            = 100, // 1
                 .Kd            = 0,
                 .Improve       = PID_Trapezoid_Intergral | PID_Integral_Limit | PID_Derivative_On_Measurement,
                 .IntegralLimit = 10000,
@@ -144,8 +144,8 @@ void ShootTask()
             DJIMotorSetRef(loader, 0);             // 同时设定参考值为0,这样停止的速度最快
             break;
         // 单发模式,根据鼠标按下的时间,触发一次之后需要进入不响应输入的状态(否则按下的时间内可能多次进入,导致多次发射)
-        case LOAD_1_BULLET:                                                          // 激活能量机关/干扰对方用,英雄用.
-            DJIMotorOuterLoop(loader, ANGLE_LOOP);                                   // 切换到角度环
+        case LOAD_1_BULLET:                                                                                   // 激活能量机关/干扰对方用,英雄用.
+            DJIMotorOuterLoop(loader, ANGLE_LOOP);                                                            // 切换到角度环
             loader_set_angle = loader->measure.total_angle - ONE_BULLET_DELTA_ANGLE * REDUCTION_RATIO_LOADER; // 控制量增加一发弹丸的角度
             DJIMotorSetRef(loader, loader_set_angle);
             hibernate_time = DWT_GetTimeline_ms();     // 记录触发指令的时间
@@ -153,10 +153,10 @@ void ShootTask()
             break;
         // 三连发,如果不需要后续可能删除
         case LOAD_3_BULLET:
-            DJIMotorOuterLoop(loader, ANGLE_LOOP);                                            // 切换到速度环
-            DJIMotorSetRef(loader, loader->measure.total_angle + 3 * ONE_BULLET_DELTA_ANGLE); // 增加3发
-            hibernate_time = DWT_GetTimeline_ms();                                            // 记录触发指令的时间
-            dead_time      = 300;                                                             // 完成3发弹丸发射的时间
+            DJIMotorOuterLoop(loader, ANGLE_LOOP);                                                                     // 切换到速度环
+            DJIMotorSetRef(loader, loader->measure.total_angle + 3 * ONE_BULLET_DELTA_ANGLE * REDUCTION_RATIO_LOADER); // 增加3发
+            hibernate_time = DWT_GetTimeline_ms();                                                                     // 记录触发指令的时间
+            dead_time      = 300;                                                                                      // 完成3发弹丸发射的时间
             break;
         // 连发模式,对速度闭环,射频后续修改为可变,目前固定为1Hz
         case LOAD_FAST:

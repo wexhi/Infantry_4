@@ -199,7 +199,7 @@ static void RemoteControlSet(void)
 {
     robot_state                   = ROBOT_READY;
     shoot_cmd_send.shoot_mode     = SHOOT_ON;
-    chassis_cmd_send.chassis_mode = CHASSIS_SLOW; // 底盘模式
+    chassis_cmd_send.chassis_mode = CHASSIS_FOLLOW_GIMBAL_YAW; // 底盘模式
     gimbal_cmd_send.gimbal_mode   = GIMBAL_GYRO_MODE;
 
     // 左侧开关状态为[下],或视觉未识别到目标,纯遥控器拨杆控制
@@ -222,8 +222,9 @@ static void RemoteControlSet(void)
         gimbal_cmd_send.pitch = PITCH_MIN_ANGLE;
 
     // 底盘参数,目前没有加入小陀螺(调试似乎暂时没有必要),系数需要调整
-    chassis_cmd_send.vx = 200.0f * (float)rc_data[TEMP].rc.rocker_l_; // _水平方向
-    chassis_cmd_send.vy = 200.0f * (float)rc_data[TEMP].rc.rocker_l1; // 1竖直方向
+    // max 70.f,参数过大会达到电机的峰值速度，导致底盘漂移等问题，且毫无意义
+    chassis_cmd_send.vx = 1000.0f * (float)rc_data[TEMP].rc.rocker_l_; // _水平方向
+    chassis_cmd_send.vy = 1000.0f * (float)rc_data[TEMP].rc.rocker_l1; // 1竖直方向
     chassis_cmd_send.wz = -30.0f * (float)rc_data[TEMP].rc.dial;
 
     // 发射参数
@@ -270,11 +271,11 @@ static void MouseKeySet(void)
 
     switch (rc_data[TEMP].key_count[KEY_PRESS][Key_C] % 3) {
         case 0:
-            chassis_speed_buff            = 0.5f;
+            chassis_speed_buff            = 1.f;
             chassis_cmd_send.chassis_mode = CHASSIS_SLOW;
             break;
         case 1:
-            chassis_speed_buff            = 1.f;
+            chassis_speed_buff            = 1.4f;
             chassis_cmd_send.chassis_mode = CHASSIS_MEDIUM;
             break;
         default:
@@ -284,8 +285,8 @@ static void MouseKeySet(void)
             break;
     }
 
-    chassis_cmd_send.vx = (rc_data[TEMP].key[KEY_PRESS].d - rc_data[TEMP].key[KEY_PRESS].a) * 16000 * chassis_speed_buff; // 系数待测
-    chassis_cmd_send.vy = (rc_data[TEMP].key[KEY_PRESS].w - rc_data[TEMP].key[KEY_PRESS].s) * 16000 * chassis_speed_buff;
+    chassis_cmd_send.vx = (rc_data[TEMP].key[KEY_PRESS].d - rc_data[TEMP].key[KEY_PRESS].a) * 36000 * chassis_speed_buff; // 系数待测
+    chassis_cmd_send.vy = (rc_data[TEMP].key[KEY_PRESS].w - rc_data[TEMP].key[KEY_PRESS].s) * 36000 * chassis_speed_buff;
     chassis_cmd_send.wz = rc_data[TEMP].key[KEY_PRESS].shift * 6000 * chassis_speed_buff;
 
     gimbal_cmd_send.yaw -= (float)rc_data[TEMP].mouse.x / 660 * 1; // 系数待测
@@ -377,11 +378,11 @@ static void MouseKeySet(void)
 
     switch (video_data[TEMP].key_count[KEY_PRESS][Key_C] % 3) {
         case 0:
-            chassis_speed_buff            = 0.5f;
+            chassis_speed_buff            = 1.f;
             chassis_cmd_send.chassis_mode = CHASSIS_SLOW;
             break;
         case 1:
-            chassis_speed_buff            = 1.f;
+            chassis_speed_buff            = 1.4f;
             chassis_cmd_send.chassis_mode = CHASSIS_MEDIUM;
             break;
         default:
@@ -390,8 +391,8 @@ static void MouseKeySet(void)
             chassis_cmd_send.chassis_mode = CHASSIS_FAST;
             break;
     }
-    chassis_cmd_send.vx = (video_data[TEMP].key[KEY_PRESS].d - video_data[TEMP].key[KEY_PRESS].a) * 16000 * chassis_speed_buff; // 系数待测
-    chassis_cmd_send.vy = (video_data[TEMP].key[KEY_PRESS].w - video_data[TEMP].key[KEY_PRESS].s) * 16000 * chassis_speed_buff;
+    chassis_cmd_send.vx = (video_data[TEMP].key[KEY_PRESS].d - video_data[TEMP].key[KEY_PRESS].a) * 36000 * chassis_speed_buff; // 系数待测
+    chassis_cmd_send.vy = (video_data[TEMP].key[KEY_PRESS].w - video_data[TEMP].key[KEY_PRESS].s) * 36000 * chassis_speed_buff;
     chassis_cmd_send.wz = video_data[TEMP].key[KEY_PRESS].shift * 6000 * chassis_speed_buff;
 
     gimbal_cmd_send.yaw -= (float)video_data[TEMP].key_data.mouse_x / 660 * 1; // 系数待测

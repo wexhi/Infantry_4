@@ -196,7 +196,8 @@ void DJIMotorControl(void)
             else
                 pid_measure = measure->total_angle; // MOTOR_FEED,对total angle闭环,防止在边界处出现突跃
             // 更新pid_ref进入下一个环
-            pid_ref = PIDCalculate(&motor_controller->angle_PID, pid_measure, pid_ref);
+            pid_ref                         = PIDCalculate(&motor_controller->angle_PID, pid_measure, pid_ref);
+            motor_controller->pid_angle_out = pid_ref; // 保存位置环输出
         }
 
         // 计算速度环,(外层闭环为速度或位置)且(启用速度环)时会计算速度环
@@ -209,7 +210,8 @@ void DJIMotorControl(void)
             else // MOTOR_FEED
                 pid_measure = measure->speed_aps;
             // 更新pid_ref进入下一个环
-            pid_ref = PIDCalculate(&motor_controller->speed_PID, pid_measure, pid_ref);
+            pid_ref                         = PIDCalculate(&motor_controller->speed_PID, pid_measure, pid_ref);
+            motor_controller->pid_speed_out = pid_ref; // 保存速度环输出
         }
 
         // 计算电流环,目前只要启用了电流环就计算,不管外层闭环是什么,并且电流只有电机自身传感器的反馈
@@ -223,7 +225,8 @@ void DJIMotorControl(void)
             pid_ref *= -1;
 
         // 获取最终输出
-        set = (int16_t)pid_ref;
+        set                             = (int16_t)pid_ref;
+        motor->motor_controller.pid_out = set; // 保存电流环输出
 
         // 分组填入发送数据
         group                                         = motor->sender_group;

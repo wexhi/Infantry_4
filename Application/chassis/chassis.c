@@ -5,6 +5,7 @@
 #include "message_center.h"
 #include "referee_task.h"
 #include "general_def.h"
+#include "user_lib.h"
 #include "referee_UI.h"
 
 #include "bsp_dwt.h"
@@ -30,7 +31,15 @@ static DJIMotor_Instance *motor_lf, *motor_rf, *motor_lb, *motor_rb; // left rig
 /* 私有函数计算的中介变量,设为静态避免参数传递的开销 */
 static float chassis_vx, chassis_vy;     // 将云台系的速度投影到底盘
 static float vt_lf, vt_rf, vt_lb, vt_rb; // 底盘速度解算后的临时输出,待进行限幅
-
+static float t_lf, t_rf, t_lb, t_rb;     // 测试电机输出的数据
+// 功率限制算法的变量定义
+static float K_limit = 1.0f, P_limit = 0;                    // 功率限制系数
+static float chassis_power;                                  // 底盘功率
+static uint16_t chassis_power_buffer;                        // 底盘功率缓冲区
+static float chassis_speed_err;                              // 底盘速度误差
+static float scaling_lf, scaling_rf, scaling_lb, scaling_rb; // 电机输出缩放系数
+#define CHASSIS_MAX_POWER 240000.f                           // 底盘最大功率,15384 * 4，取了4个3508电机最大电流的一个保守值
+#define CHASSIS_MAX_SPEED 240000.f                           // 底盘最大速度,单位mm/s
 #ifdef CHASSIS_MCNAMEE_WHEEL
 #define CHASSIS_WHEEL_OFFSET 1.0f // 机器人底盘轮子修正偏移量
 #elif defined(CHASSIS_OMNI_WHEEL)
@@ -44,15 +53,15 @@ void ChassisInit()
         .can_init_config.can_handle   = &hcan1,
         .controller_param_init_config = {
             .speed_PID = {
-                .Kp            = 11,   // 4.5
-                .Ki            = 0.08,    // 0
+                .Kp            = 10,   // 4.5
+                .Ki            = 0,    // 0
                 .Kd            = 0.02, // 0
                 .IntegralLimit = 5000,
                 .Improve       = PID_Trapezoid_Intergral | PID_Integral_Limit | PID_Derivative_On_Measurement,
                 .MaxOut        = 12000,
             },
             .current_PID = {
-                .Kp            = 0.7, // 0.4
+                .Kp            = 0.9, // 0.4
                 .Ki            = 0,   // 0
                 .Kd            = 0,
                 .IntegralLimit = 3000,
@@ -70,7 +79,7 @@ void ChassisInit()
     };
     //  @todo: 当前还没有设置电机的正反转,仍然需要手动添加reference的正负号,需要电机module的支持,待修改.
     chassis_motor_config.can_init_config.tx_id                             = 1;
-    chassis_motor_config.controller_setting_init_config.motor_reverse_flag = MOTOR_DIRECTION_REVERSE;
+    chassis_motor_config.controller_setting_init_config.motor_reverse_flag = MOTOR_DIRECTION_NORMAL;
     motor_lf                                                               = DJIMotorInit(&chassis_motor_config);
 
     chassis_motor_config.can_init_config.tx_id                             = 2;
@@ -82,7 +91,7 @@ void ChassisInit()
     motor_lb                                                               = DJIMotorInit(&chassis_motor_config);
 
     chassis_motor_config.can_init_config.tx_id                             = 4;
-    chassis_motor_config.controller_setting_init_config.motor_reverse_flag = MOTOR_DIRECTION_REVERSE;
+    chassis_motor_config.controller_setting_init_config.motor_reverse_flag = MOTOR_DIRECTION_NORMAL;
     motor_rb                                                               = DJIMotorInit(&chassis_motor_config);
 
     referee_data = UITaskInit(&huart6, &ui_data); // 裁判系统初始化,会同时初始化UI
@@ -112,10 +121,22 @@ void ChassisInit()
  */
 static void MecanumCalculate()
 {
-    vt_lf = (chassis_vx - chassis_vy) * CHASSIS_WHEEL_OFFSET - chassis_cmd_recv.wz; // 1
-    vt_rf = (chassis_vx + chassis_vy) * CHASSIS_WHEEL_OFFSET + chassis_cmd_recv.wz; // 2
-    vt_rb = (chassis_vx + chassis_vy) * CHASSIS_WHEEL_OFFSET - chassis_cmd_recv.wz; // 3
-    vt_lb = (chassis_vx - chassis_vy) * CHASSIS_WHEEL_OFFSET + chassis_cmd_recv.wz; // 4
+    vt_lf = (-chassis_vx + chassis_vy) * CHASSIS_WHEEL_OFFSET + chassis_cmd_recv.wz; // 1
+    vt_rf = (chassis_vx + chassis_vy) * CHASSIS_WHEEL_OFFSET + chassis_cmd_recv.wz;  // 2
+    vt_rb = (-chassis_vx - chassis_vy) * CHASSIS_WHEEL_OFFSET + chassis_cmd_recv.wz; // 3
+    vt_lb = (chassis_vx - chassis_vy) * CHASSIS_WHEEL_OFFSET + chassis_cmd_recv.wz;  // 4
+}
+
+/**
+ * @brief 电机速度限制
+ *
+ */
+static void Motor_Speed_limiting()
+{
+    VAL_LIMIT(vt_lf, -CHASSIS_MAX_SPEED, CHASSIS_MAX_SPEED);
+    VAL_LIMIT(vt_rf, -CHASSIS_MAX_SPEED, CHASSIS_MAX_SPEED);
+    VAL_LIMIT(vt_lb, -CHASSIS_MAX_SPEED, CHASSIS_MAX_SPEED);
+    VAL_LIMIT(vt_rb, -CHASSIS_MAX_SPEED, CHASSIS_MAX_SPEED);
 }
 
 /**
@@ -125,12 +146,75 @@ static void MecanumCalculate()
 static void LimitChassisOutput()
 {
     // 功率限制待添加
+    // Motor_Speed_limiting();
+    // chassis_power        = referee_data->PowerHeatData.chassis_power;
+    // chassis_power_buffer = referee_data->PowerHeatData.buffer_energy;
+    // if (chassis_power > 960) {
+    //     Motor_Speed_limiting();
+    // } else {
+    //     chassis_speed_err = (fabsf(vt_lf - motor_lf->measure.speed_aps) +
+    //                          fabsf(vt_rf - motor_rf->measure.speed_aps) +
+    //                          fabsf(vt_lb - motor_lb->measure.speed_aps) +
+    //                          fabsf(vt_rb - motor_rb->measure.speed_aps)); // 获取4个电机的速度误差
 
+    //     // 当有误差时,期望滞后占比环，增益个体加速度
+    //     if (chassis_speed_err != 0) {
+    //         scaling_lf = (vt_lf - motor_lf->measure.speed_aps) / chassis_speed_err;
+    //         scaling_rf = (vt_rf - motor_rf->measure.speed_aps) / chassis_speed_err;
+    //         scaling_lb = (vt_lb - motor_lb->measure.speed_aps) / chassis_speed_err;
+    //         scaling_rb = (vt_rb - motor_rb->measure.speed_aps) / chassis_speed_err;
+    //     } else {
+    //         scaling_lf = 0.25f, scaling_rf = 0.25f, scaling_lb = 0.25f, scaling_rb = 0.25f;
+    //     }
+    //     /*功率满输出占比环，车总增益加速度*/
+    //     K_limit = chassis_speed_err / (CHASSIS_MAX_POWER * 4); // 每个轮子最大速度 * 4
+
+    //     VAL_LIMIT(K_limit, -1, 1); // 限制K_limit的范围,限制绝对值不能超过1，也就是Chassis_pidout一定要小于某个速度值，不能超调
+
+    //     /*缓冲能量占比环，总体约束*/
+    //     if (chassis_power_buffer < 50 && chassis_power_buffer >= 40)
+    //         P_limit = 0.9; // 近似于以一个线性来约束比例（为了保守可以调低Plimit，但会影响响应速度）
+    //     else if (chassis_power_buffer < 40 && chassis_power_buffer >= 35)
+    //         P_limit = 0.75;
+    //     else if (chassis_power_buffer < 35 && chassis_power_buffer >= 30)
+    //         P_limit = 0.5;
+    //     else if (chassis_power_buffer < 30 && chassis_power_buffer >= 20)
+    //         P_limit = 0.25;
+    //     else if (chassis_power_buffer < 20 && chassis_power_buffer >= 10)
+    //         P_limit = 0.125;
+    //     else if (chassis_power_buffer < 10 && chassis_power_buffer > 0)
+    //         P_limit = 0.05;
+    //     else {
+    //         P_limit = 1;
+    //     }
+
+    //     vt_lf = scaling_lf * (K_limit * CHASSIS_MAX_SPEED) * P_limit;
+    //     vt_rf = scaling_rf * (K_limit * CHASSIS_MAX_SPEED) * P_limit;
+    //     vt_lb = scaling_lb * (K_limit * CHASSIS_MAX_SPEED) * P_limit;
+    //     vt_rb = scaling_rb * (K_limit * CHASSIS_MAX_SPEED) * P_limit;
+    // }
     // 完成功率限制后进行电机参考输入设定
     DJIMotorSetRef(motor_lf, vt_lf);
     DJIMotorSetRef(motor_rf, vt_rf);
     DJIMotorSetRef(motor_lb, vt_lb);
     DJIMotorSetRef(motor_rb, vt_rb);
+}
+
+/**
+ * @brief 根据每个轮子的速度反馈,计算底盘的实际运动速度,逆运动解算
+ *        对于双板的情况,考虑增加来自底盘板IMU的数据
+ *
+ */
+static void EstimateSpeed()
+{
+    // 根据电机速度和陀螺仪的角速度进行解算,还可以利用加速度计判断是否打滑(如果有)
+    // chassis_feedback_data.vx vy wz =
+    //  ...
+    // max 48000
+    t_lb = motor_lb->measure.speed_aps;
+    t_rb = motor_rb->measure.speed_aps;
+    t_lf = motor_lf->measure.speed_aps;
+    t_rf = motor_rf->measure.speed_aps;
 }
 
 /* 机器人底盘控制核心任务 */
@@ -155,6 +239,20 @@ void ChassisTask()
         DJIMotorEnable(motor_lb);
         DJIMotorEnable(motor_rb);
     }
+
+    // 根据控制模式设定旋转速度
+    // 根据控制模式设定旋转速度
+    switch (chassis_cmd_recv.chassis_mode) {
+        case CHASSIS_FOLLOW_GIMBAL_YAW: // 跟随云台,不单独设置pid,以误差角度平方为速度输出
+            if (chassis_cmd_recv.offset_angle > 0.1f || chassis_cmd_recv.offset_angle < -0.1f)
+                chassis_cmd_recv.wz = -6.f * chassis_cmd_recv.offset_angle * abs(chassis_cmd_recv.offset_angle);
+            else
+                chassis_cmd_recv.wz = 0;
+            break;
+        default:
+            break;
+    }
+
     // 根据云台和底盘的角度offset将控制量映射到底盘坐标系上
     // 底盘逆时针旋转为角度正方向;云台命令的方向以云台指向的方向为x,采用右手系(x指向正北时y在正东)
     static float sin_theta, cos_theta;
@@ -169,6 +267,9 @@ void ChassisTask()
 
     // 根据裁判系统的反馈数据和电容数据对输出限幅并设定闭环参考值
     LimitChassisOutput();
+
+    // 根据电机的反馈速度和IMU(如果有)计算真实速度
+    EstimateSpeed();
 
     chassis_feedback_data.shoot_heat  = referee_data->PowerHeatData.shooter_17mm_1_barrel_heat;
     chassis_feedback_data.shoot_limit = referee_data->GameRobotState.shooter_barrel_heat_limit;
