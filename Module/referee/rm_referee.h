@@ -41,6 +41,7 @@ typedef struct
     ext_shoot_data_t ShootData;                            // 0x0207
     projectile_allowance_t ProjectileAllowance;            // 0x0208
     rfid_status_t RFIDStatus;                              // 0x0209
+    map_robot_data_t MapRobotData;                         // 0x0305
 
     // 自定义交互数据的接收
     Communicate_ReceiveData_t ReceiveData;
@@ -80,7 +81,7 @@ typedef struct
     loader_mode_e loader_mode;               // 射频选择
     Chassis_Power_Data_s Chassis_Power_Data; // 功率控制
     vision_mode_e vision_mode;               // 视觉模式
-    uint8_t level; // 等级显示
+    uint8_t level;                           // 等级显示
 
     // 上一次的模式，用于flag判断
     chassis_mode_e chassis_last_mode;

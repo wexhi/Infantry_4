@@ -88,6 +88,11 @@ typedef enum {
 } chassis_mode_e;
 
 typedef enum {
+    SUPER_CAP_OFF = 0, // 超级电容关闭
+    SUPER_CAP_ON,      // 超级电容开启
+} super_cap_mode_e;
+
+typedef enum {
     GIMBAL_ZERO_FORCE = 0, // 电流零输入
     GIMBAL_FREE_MODE,      // 云台自由运动模式,即与底盘分离(底盘此时应为NO_FOLLOW)反馈值为电机total_angle;似乎可以改为全部用IMU数据?
     GIMBAL_GYRO_MODE,      // 云台陀螺仪反馈模式,反馈值为陀螺仪pitch,total_yaw_angle,底盘可以为小陀螺和跟随模式
@@ -209,6 +214,7 @@ typedef struct
     float wz;           // 旋转速度
     float offset_angle; // 底盘和归中位置的夹角
     chassis_mode_e chassis_mode;
+    super_cap_mode_e super_cap_mode;
     // UI部分
     ui_mode_e ui_mode;             //  UI状态
     friction_mode_e friction_mode; //  摩擦轮状态

@@ -7,6 +7,7 @@
 #include "general_def.h"
 #include "user_lib.h"
 #include "referee_UI.h"
+#include "super_cap.h"
 
 #include "bsp_dwt.h"
 #include "arm_math.h"
@@ -26,6 +27,7 @@ __unused static Chassis_Upload_Data_s chassis_feedback_data; // 底盘回传的�
 static referee_info_t *referee_data;                         // 用于获取裁判系统的数据
 static Referee_Interactive_info_t ui_data;                   // UI数据，将底盘中的数据传入此结构体的对应变量中，UI会自动检测是否变化，对应显示UI
 
+static SuperCap_Instance *super_cap;                                 // 超级电容实例
 static DJIMotor_Instance *motor_lf, *motor_rf, *motor_lb, *motor_rb; // left right forward back
 
 /* 私有函数计算的中介变量,设为静态避免参数传递的开销 */
@@ -33,13 +35,13 @@ static float chassis_vx, chassis_vy;     // 将云台系的速度投影到底盘
 static float vt_lf, vt_rf, vt_lb, vt_rb; // 底盘速度解算后的临时输出,待进行限幅
 static float t_lf, t_rf, t_lb, t_rb;     // 测试电机输出的数据
 // 功率限制算法的变量定义
-static float K_limit = 1.0f, P_limit = 0;                    // 功率限制系数
-static float chassis_power;                                  // 底盘功率
-static uint16_t chassis_power_buffer;                        // 底盘功率缓冲区
-static float chassis_speed_err;                              // 底盘速度误差
-static float scaling_lf, scaling_rf, scaling_lb, scaling_rb; // 电机输出缩放系数
-#define CHASSIS_MAX_POWER 240000.f                           // 底盘最大功率,15384 * 4，取了4个3508电机最大电流的一个保守值
-#define CHASSIS_MAX_SPEED 240000.f                           // 底盘最大速度,单位mm/s
+// static float K_limit = 1.0f, P_limit = 0;                    // 功率限制系数
+// static float chassis_power;                                  // 底盘功率
+// static uint16_t chassis_power_buffer;                        // 底盘功率缓冲区
+// static float chassis_speed_err;                              // 底盘速度误差
+// static float scaling_lf, scaling_rf, scaling_lb, scaling_rb; // 电机输出缩放系数
+#define CHASSIS_MAX_POWER 240000.f // 底盘最大功率,15384 * 4，取了4个3508电机最大电流的一个保守值
+#define CHASSIS_MAX_SPEED 240000.f // 底盘最大速度,单位mm/s
 #ifdef CHASSIS_MCNAMEE_WHEEL
 #define CHASSIS_WHEEL_OFFSET 1.0f // 机器人底盘轮子修正偏移量
 #elif defined(CHASSIS_OMNI_WHEEL)
@@ -95,6 +97,16 @@ void ChassisInit()
     motor_rb                                                               = DJIMotorInit(&chassis_motor_config);
 
     referee_data = UITaskInit(&huart6, &ui_data); // 裁判系统初始化,会同时初始化UI
+
+    SuperCap_Init_Config_s super_cap_config = {
+        .can_config = {
+            .can_handle = &hcan1,
+            .tx_id      = 0x302,
+            .rx_id      = 0x301,
+        },
+    };
+    super_cap = SuperCapInit(&super_cap_config); // 超级电容初始化
+
 #ifdef CHASSIS_BOARD
     Chassis_IMU_data                 = INS_Init(); // 底盘IMU初始化
     CAN_Comm_Init_Config_s comm_conf = {
@@ -131,13 +143,13 @@ static void MecanumCalculate()
  * @brief 电机速度限制
  *
  */
-static void Motor_Speed_limiting()
-{
-    VAL_LIMIT(vt_lf, -CHASSIS_MAX_SPEED, CHASSIS_MAX_SPEED);
-    VAL_LIMIT(vt_rf, -CHASSIS_MAX_SPEED, CHASSIS_MAX_SPEED);
-    VAL_LIMIT(vt_lb, -CHASSIS_MAX_SPEED, CHASSIS_MAX_SPEED);
-    VAL_LIMIT(vt_rb, -CHASSIS_MAX_SPEED, CHASSIS_MAX_SPEED);
-}
+// static void Motor_Speed_limiting()
+// {
+//     VAL_LIMIT(vt_lf, -CHASSIS_MAX_SPEED, CHASSIS_MAX_SPEED);
+//     VAL_LIMIT(vt_rf, -CHASSIS_MAX_SPEED, CHASSIS_MAX_SPEED);
+//     VAL_LIMIT(vt_lb, -CHASSIS_MAX_SPEED, CHASSIS_MAX_SPEED);
+//     VAL_LIMIT(vt_rb, -CHASSIS_MAX_SPEED, CHASSIS_MAX_SPEED);
+// }
 
 /**
  * @brief 根据裁判系统和电容剩余容量对输出进行限制并设置电机参考值
@@ -193,6 +205,18 @@ static void LimitChassisOutput()
     //     vt_lb = scaling_lb * (K_limit * CHASSIS_MAX_SPEED) * P_limit;
     //     vt_rb = scaling_rb * (K_limit * CHASSIS_MAX_SPEED) * P_limit;
     // }
+    switch (chassis_cmd_recv.super_cap_mode) {
+        case SUPER_CAP_OFF:
+            SuperCapSet(referee_data->PowerHeatData.buffer_energy, referee_data->PowerHeatData.chassis_power, 0); // 设置超级电容数据
+            break;
+        case SUCKER_ON:
+            SuperCapSet(referee_data->PowerHeatData.buffer_energy, referee_data->PowerHeatData.chassis_power, 1); // 设置超级电容数据
+            break;
+        default:
+            break;
+    }
+
+    SuperCapSend(); // 发送超级电容数据
     // 完成功率限制后进行电机参考输入设定
     DJIMotorSetRef(motor_lf, vt_lf);
     DJIMotorSetRef(motor_rf, vt_rf);

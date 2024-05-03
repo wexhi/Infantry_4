@@ -232,6 +232,9 @@ static void MyUIRefresh(referee_info_t *referee_recv_info, Referee_Interactive_i
                 UICharDraw(&UI_State_dyn[1], "sd1", UI_Graph_Change, 8, UI_Color_Main, 15, 2, 270, 750, "medium   ");
                 // 此处注意字数对齐问题，字数相同才能覆盖掉
                 break;
+            case CHASSIS_FOLLOW_GIMBAL_YAW:
+                UICharDraw(&UI_State_dyn[1], "sd1", UI_Graph_Change, 8, UI_Color_Main, 15, 2, 270, 750, "follow   ");
+                break;
             case CHASSIS_SLOW:
                 UICharDraw(&UI_State_dyn[1], "sd1", UI_Graph_Change, 8, UI_Color_Main, 15, 2, 270, 750, "slow     ");
                 break;

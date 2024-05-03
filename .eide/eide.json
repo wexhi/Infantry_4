@@ -115,7 +115,8 @@
           "Module/motor/DJImotor",
           "Module/motor/DMmotor",
           "Application/gimbal",
-          "Application/shoot"
+          "Application/shoot",
+          "Module/super_cap"
         ],
         "libList": [
           "Middlewares/ST/ARM/DSP/Lib"

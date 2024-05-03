@@ -36,27 +36,6 @@ static void RecvProcess(Vision_Recv_s *recv, uint8_t *rx_buff)
 }
 
 /**
- * @brief 回调函数，确认帧头后用于解析视觉数据
- *
- */
-static void DecodeVision(uint16_t var)
-{
-    UNUSED(var); // 仅为了消除警告
-#ifdef VISION_USE_VCP
-    if (vis_recv_buff[0] == vision_instance->recv_data->header) {
-        // 读取视觉数据
-        RecvProcess(vision_instance->recv_data, vis_recv_buff);
-    }
-#endif
-#ifdef VISION_USE_UART
-    if (vision_instance->usart->recv_buff[0] == vision_instance->recv_data->header) {
-        // 读取视觉数据
-        RecvProcess(vision_instance->recv_data, vision_instance->usart->recv_buff);
-    }
-#endif
-}
-
-/**
  * @brief 离线回调函数,将在daemon.c中被daemon task调用
  * @attention 由于HAL库的设计问题,串口开启DMA接收之后同时发送有概率出现__HAL_LOCK()导致的死锁,使得无法
  *            进入接收中断.通过daemon判断数据更新,重新调用服务启动函数以解决此问题.
@@ -147,22 +126,54 @@ Vision_Send_s *VisionSendRegister(Vision_Send_Init_Config_s *send_config)
 
 #ifdef VISION_USE_UART
 
+static void RadarDecode(void)
+{
+    uint16_t judge_length;                         // 统计一帧数据长度
+    if (vision_instance->usart->recv_buff == NULL) // 空数据包，则不作任何处理
+        return;
+}
+
+/**
+ * @brief 回调函数，确认帧头后用于解析视觉数据
+ *
+ */
+static void DecodeVision()
+{
+    if (vision_instance->usart->recv_buff[0] == vision_instance->recv_data->header) {
+        // 读取视觉数据
+        RecvProcess(vision_instance->recv_data, vision_instance->usart->recv_buff);
+    }
+}
+
 /**
  * @brief 用于注册一个视觉通信模块实例,返回一个视觉接收数据结构体指针
  *
  * @param init_config
  * @return Vision_Recv_s*
  */
-Vision_Recv_s *VisionInit(Vision_Init_Config_s *init_config)
+Vision_Recv_s *VisionInit(UART_HandleTypeDef *video_usart_handle)
 {
     vision_instance = (Vision_Instance *)malloc(sizeof(Vision_Instance));
     memset(vision_instance, 0, sizeof(Vision_Instance));
+    USART_Init_Config_s conf;
+    conf.module_callback = DecodeVision;
+    conf.recv_buff_size  = VISION_RECV_SIZE;
+    conf.usart_handle    = video_usart_handle;
 
-    init_config->usart_config.module_callback = DecodeVision;
+    vision_instance->usart                = USARTRegister(&conf);
+    Vision_Recv_Init_Config_s recv_config = {
+        .header = VISION_RECV_HEADER,
+    };
 
-    vision_instance->usart     = USARTRegister(&init_config->usart_config);
-    vision_instance->recv_data = VisionRecvRegister(&init_config->recv_config);
-    vision_instance->send_data = VisionSendRegister(&init_config->send_config);
+    vision_instance->recv_data            = VisionRecvRegister(&recv_config);
+    Vision_Send_Init_Config_s send_config = {
+        .header        = VISION_SEND_HEADER,
+        .detect_color  = VISION_DETECT_COLOR_RED,
+        .reset_tracker = VISION_RESET_TRACKER_NO,
+        .is_shoot      = VISION_SHOOTING,
+        .tail          = VISION_SEND_TAIL,
+    };
+    vision_instance->send_data = VisionSendRegister(&send_config);
     // 为master process注册daemon,用于判断视觉通信是否离线
     Daemon_Init_Config_s daemon_conf = {
         .callback     = VisionOfflineCallback, // 离线时调用的回调函数,会重启串口接收
@@ -191,7 +202,18 @@ void VisionSend()
 #ifdef VISION_USE_VCP
 
 #include "bsp_usb.h"
-
+/**
+ * @brief 回调函数，确认帧头后用于解析视觉数据
+ *
+ */
+static void DecodeVision(uint16_t var)
+{
+    UNUSED(var); // 仅为了消除警告
+    if (vis_recv_buff[0] == vision_instance->recv_data->header) {
+        // 读取视觉数据
+        RecvProcess(vision_instance->recv_data, vis_recv_buff);
+    }
+}
 /**
  * @brief 用于注册一个视觉通信模块实例,返回一个视觉接收数据结构体指针
  *
