@@ -33,7 +33,6 @@ static DJIMotor_Instance *motor_lf, *motor_rf, *motor_lb, *motor_rb; // left rig
 /* 私有函数计算的中介变量,设为静态避免参数传递的开销 */
 static float chassis_vx, chassis_vy;     // 将云台系的速度投影到底盘
 static float vt_lf, vt_rf, vt_lb, vt_rb; // 底盘速度解算后的临时输出,待进行限幅
-static float t_lf, t_rf, t_lb, t_rb;     // 测试电机输出的数据
 // 功率限制算法的变量定义
 // static float K_limit = 1.0f, P_limit = 0;                    // 功率限制系数
 // static float chassis_power;                                  // 底盘功率
@@ -235,10 +234,6 @@ static void EstimateSpeed()
     // chassis_feedback_data.vx vy wz =
     //  ...
     // max 48000
-    t_lb = motor_lb->measure.speed_aps;
-    t_rb = motor_rb->measure.speed_aps;
-    t_lf = motor_lf->measure.speed_aps;
-    t_rf = motor_rf->measure.speed_aps;
 }
 
 /* 机器人底盘控制核心任务 */
