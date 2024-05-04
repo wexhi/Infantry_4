@@ -223,8 +223,8 @@ static void RemoteControlSet(void)
 
     // 底盘参数,目前没有加入小陀螺(调试似乎暂时没有必要),系数需要调整
     // max 70.f,参数过大会达到电机的峰值速度，导致底盘漂移等问题，且毫无意义
-    chassis_cmd_send.vx = 1000.0f * (float)rc_data[TEMP].rc.rocker_l_; // _水平方向
-    chassis_cmd_send.vy = 1000.0f * (float)rc_data[TEMP].rc.rocker_l1; // 1竖直方向
+    chassis_cmd_send.vx = 60.0f * (float)rc_data[TEMP].rc.rocker_l_; // _水平方向
+    chassis_cmd_send.vy = 60.0f * (float)rc_data[TEMP].rc.rocker_l1; // 1竖直方向
     chassis_cmd_send.wz = -30.0f * (float)rc_data[TEMP].rc.dial;
 
     // 发射参数
@@ -484,10 +484,11 @@ static void MouseKeySet(void)
 static void EmergencyHandler(void)
 {
     // 急停
-    robot_state                   = ROBOT_STOP;
-    gimbal_cmd_send.gimbal_mode   = GIMBAL_ZERO_FORCE;
-    chassis_cmd_send.chassis_mode = CHASSIS_ZERO_FORCE;
-    shoot_cmd_send.shoot_mode     = SHOOT_OFF;
-    shoot_cmd_send.friction_mode  = FRICTION_OFF;
-    shoot_cmd_send.load_mode      = LOAD_STOP;
+    robot_state                     = ROBOT_STOP;
+    gimbal_cmd_send.gimbal_mode     = GIMBAL_ZERO_FORCE;
+    chassis_cmd_send.chassis_mode   = CHASSIS_ZERO_FORCE;
+    chassis_cmd_send.super_cap_mode = SUPER_CAP_OFF;
+    shoot_cmd_send.shoot_mode       = SHOOT_OFF;
+    shoot_cmd_send.friction_mode    = FRICTION_OFF;
+    shoot_cmd_send.load_mode        = LOAD_STOP;
 }
