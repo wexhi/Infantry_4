@@ -391,12 +391,12 @@ static void MouseKeySet(void)
             chassis_cmd_send.chassis_mode = CHASSIS_FAST;
             break;
     }
-    chassis_cmd_send.vx = (video_data[TEMP].key[KEY_PRESS].d - video_data[TEMP].key[KEY_PRESS].a) * 36000 * chassis_speed_buff; // 系数待测
-    chassis_cmd_send.vy = (video_data[TEMP].key[KEY_PRESS].w - video_data[TEMP].key[KEY_PRESS].s) * 36000 * chassis_speed_buff;
-    chassis_cmd_send.wz = video_data[TEMP].key[KEY_PRESS].shift * 6000 * chassis_speed_buff;
+    chassis_cmd_send.vx = (video_data[TEMP].key[KEY_PRESS].d - video_data[TEMP].key[KEY_PRESS].a) * 20000 * chassis_speed_buff; // 系数待测
+    chassis_cmd_send.vy = (video_data[TEMP].key[KEY_PRESS].w - video_data[TEMP].key[KEY_PRESS].s) * 20000 * chassis_speed_buff;
+    chassis_cmd_send.wz = video_data[TEMP].key[KEY_PRESS].shift * 14000 * chassis_speed_buff;
 
-    gimbal_cmd_send.yaw -= (float)video_data[TEMP].key_data.mouse_x / 660 * 1; // 系数待测
-    gimbal_cmd_send.pitch -= (float)video_data[TEMP].key_data.mouse_y / 660 * 0.5;
+    gimbal_cmd_send.yaw -= (float)video_data[TEMP].key_data.mouse_x / 660 * 2.5; // 系数待测
+    gimbal_cmd_send.pitch += (float)video_data[TEMP].key_data.mouse_y / 660 * 2.5;
 
     if (vision_ctrl->is_tracking) {
         chassis_cmd_send.vision_mode = LOCK;
