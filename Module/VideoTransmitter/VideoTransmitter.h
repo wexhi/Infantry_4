@@ -2,8 +2,8 @@
  * @file VideoTransmitter.h
  * @author wexhi (wexhi@qq.com)
  * @brief  用于图传链路的接收以及解析
- * @version 0.1
- * @date 2024-03-27
+ * @version 1.1
+ * @date 2024-05-06
  * @todo 图传链路应该属于遥控器控制的附庸，后续考虑合并或转移
  *
  * @copyright Copyright (c) 2024 CQU QianLi EC 2024 all rights reserved
