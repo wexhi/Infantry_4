@@ -199,7 +199,7 @@ static void RemoteControlSet(void)
 {
     robot_state                   = ROBOT_READY;
     shoot_cmd_send.shoot_mode     = SHOOT_ON;
-    chassis_cmd_send.chassis_mode = CHASSIS_FOLLOW_GIMBAL_YAW; // 底盘模式
+    chassis_cmd_send.chassis_mode = CHASSIS_SLOW; // 底盘模式
     gimbal_cmd_send.gimbal_mode   = GIMBAL_GYRO_MODE;
 
     // 左侧开关状态为[下],或视觉未识别到目标,纯遥控器拨杆控制
