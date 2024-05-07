@@ -140,8 +140,8 @@ void RobotCMDTask(void)
     // 设置视觉发送数据,还需增加加速度和角速度数据
     static float yaw, pitch, roll;
     yaw   = gimbal_fetch_data.gimbal_imu_data.YawTotalAngle;
-    pitch = gimbal_fetch_data.gimbal_imu_data.Pitch;
-    roll  = gimbal_fetch_data.gimbal_imu_data.Roll;
+    pitch = gimbal_fetch_data.gimbal_imu_data.Roll;
+    roll  = gimbal_fetch_data.gimbal_imu_data.Pitch;
 
     VisionSetAltitude(yaw, pitch, roll);
 
@@ -397,6 +397,15 @@ static void MouseKeySet(void)
 
     gimbal_cmd_send.yaw -= (float)video_data[TEMPV].key_data.mouse_x / 660 * 2.5; // 系数待测
     gimbal_cmd_send.pitch += (float)video_data[TEMPV].key_data.mouse_y / 660 * 2.5;
+
+    switch (video_data[TEMPV].key_count[V_KEY_PRESS][V_Key_Z] % 2) {
+        case 0:
+            VisionSetEnergy(0);
+            break;
+        default:
+            VisionSetEnergy(1);
+            break;
+    }
 
     if (vision_ctrl->is_tracking) {
         chassis_cmd_send.vision_mode = LOCK;

@@ -19,9 +19,7 @@
 
 static Referee_Interactive_info_t *Interactive_data; // UI绘制需要的机器人状态数据
 static referee_info_t *referee_recv_info;            // 接收到的裁判系统数据
-extern RC_ctrl_t rc_ctrl[2];
-extern Video_ctrl_t video_ctrl[2];
-uint8_t UI_Seq; // 包序号，供整个referee文件使用
+uint8_t UI_Seq;                                      // 包序号，供整个referee文件使用
 // @todo 不应该使用全局变量
 
 /**
@@ -365,7 +363,6 @@ static void UIChangeCheck(Referee_Interactive_info_t *_Interactive_data)
         _Interactive_data->level_last                          = _Interactive_data->level;
     }
 
-    // _Interactive_data->is_tracking = is_track;
     // if (_Interactive_data->is_tracking != _Interactive_data->is_tracking_last) {
     //     _Interactive_data->Referee_Interactive_Flag.tracking_flag = 1;
     //     _Interactive_data->is_tracking_last                       = _Interactive_data->is_tracking;

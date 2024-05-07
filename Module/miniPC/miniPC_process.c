@@ -64,6 +64,16 @@ void VisionSetAltitude(float yaw, float pitch, float roll)
 }
 
 /**
+ * @brief 设置是否击打能量机关
+ *
+ * @param is_energy_mode 0-默认瞄准装甲板，1-瞄准能量机关
+ */
+void VisionSetEnergy(uint8_t is_energy_mode)
+{
+    vision_instance->send_data->is_energy_mode = is_energy_mode;
+}
+
+/**
  * @brief 发送数据处理函数
  *
  * @param send 待发送数据
@@ -74,19 +84,20 @@ static void SendProcess(Vision_Send_s *send, uint8_t *tx_buff)
 {
     /* 发送帧头，目标颜色，是否重置等数据 */
     tx_buff[0] = send->header;
-    tx_buff[1] = send->detect_color;
-    tx_buff[2] = send->reset_tracker;
-    tx_buff[3] = 1;
+    tx_buff[1] = send->is_energy_mode;
+    tx_buff[2] = send->detect_color;
+    tx_buff[3] = send->reset_tracker;
+    tx_buff[4] = 1;
 
     /* 使用memcpy发送浮点型小数 */
-    memcpy(&tx_buff[4], &send->roll, 4);
-    memcpy(&tx_buff[8], &send->yaw, 4);
-    memcpy(&tx_buff[12], &send->pitch, 4);
+    memcpy(&tx_buff[5], &send->roll, 4);
+    memcpy(&tx_buff[9], &send->yaw, 4);
+    memcpy(&tx_buff[13], &send->pitch, 4);
 
     /* 发送校验位 */
     send->checksum = Get_CRC16_Check_Sum(&tx_buff[0], VISION_SEND_SIZE - 3u, CRC_INIT);
-    memcpy(&tx_buff[16], &send->checksum, 2);
-    memcpy(&tx_buff[18], &send->tail, 1);
+    memcpy(&tx_buff[17], &send->checksum, 2);
+    memcpy(&tx_buff[19], &send->tail, 1);
 }
 
 /**
