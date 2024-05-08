@@ -405,6 +405,7 @@ static void DMMotorPositonSpeedContoroll(DM_MotorInstance *motor, float pos_ref,
  *
  * @todo 目前实现了MIT模式和位置速度模式和力控模式，后续需要增加其他控制模式请自行添加
  */
+static int time = 0;
 void DMMotorTask(void const *argument)
 {
     float pid_ref, speed_ref;
@@ -415,6 +416,14 @@ void DMMotorTask(void const *argument)
     // uint16_t tmp;
     DMMotor_Send_s motor_send_mailbox;
     while (1) {
+        time++;
+        // 未使能且电机应当激活时，发送激活指令
+        if (time % 200 == 0) {
+            DMMotorEnable(motor);
+            DMMotorSetMode(DM_CMD_MOTOR_MODE, motor);
+            osDelay(2);
+        }
+
         pid_ref   = motor->pid_ref;
         speed_ref = motor->speed_ref;
 
