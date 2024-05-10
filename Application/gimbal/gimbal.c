@@ -13,6 +13,9 @@ static Subscriber_t *gimbal_sub;                  // cmd控制消息订阅者
 static Gimbal_Upload_Data_s gimbal_feedback_data; // 回传给cmd的云台状态信息
 static Gimbal_Ctrl_Cmd_s gimbal_cmd_recv;         // 来自cmd的控制信息
 
+// 调试数据
+static float yaw_target, yaw_current, pitch_target, pitch_current;
+
 void GimbalInit()
 {
     gimba_IMU_data = INS_Init(); // IMU先初始化,获取姿态数据指针赋给yaw电机的其他数据来源
@@ -24,9 +27,9 @@ void GimbalInit()
         },
         .controller_param_init_config = {
             .angle_PID = {
-                .Kp                = 0.285,
-                .Ki                = 0.05,
-                .Kd                = 0.01,
+                .Kp                = 0.685,
+                .Ki                = 0.315,
+                .Kd                = 0.022,
                 .Improve           = PID_Trapezoid_Intergral | PID_Integral_Limit | PID_Derivative_On_Measurement | PID_DerivativeFilter | PID_ChangingIntegrationRate,
                 .IntegralLimit     = 10,
                 .CoefB             = 0.3,
@@ -35,8 +38,8 @@ void GimbalInit()
                 .Derivative_LPF_RC = 0.025,
             },
             .speed_PID = {
-                .Kp            = 2700,
-                .Ki            = 100,
+                .Kp            = 7500,
+                .Ki            = 1200,
                 .Kd            = 0,
                 .CoefB         = 0.3,
                 .CoefA         = 0.2,
@@ -64,7 +67,7 @@ void GimbalInit()
         },
         .controller_param_init_config = {
             .angle_PID = {
-                .Kp                = 0.4,
+                .Kp                = 0.42,
                 .Ki                = 0.5,
                 .Kd                = 0.02,
                 .Improve           = PID_Trapezoid_Intergral | PID_Integral_Limit | PID_Derivative_On_Measurement | PID_ChangingIntegrationRate | PID_OutputFilter,
@@ -76,7 +79,7 @@ void GimbalInit()
                 .Output_LPF_RC     = 0.05,
             },
             .speed_PID = {
-                .Kp            = 10000,
+                .Kp            = 14000,
                 .Ki            = 2000,
                 .Kd            = 0,
                 .CoefB         = 0.6,
@@ -114,6 +117,10 @@ void GimbalTask()
     // 获取云台控制数据
     // 后续增加未收到数据的处理
     SubGetMessage(gimbal_sub, &gimbal_cmd_recv);
+    yaw_target    = gimbal_cmd_recv.yaw;
+    yaw_current   = gimba_IMU_data->YawTotalAngle;
+    pitch_target  = gimbal_cmd_recv.pitch;
+    pitch_current = gimba_IMU_data->Roll;
     // DJIMotorStop(yaw_motor);
     // DJIMotorStop(pitch_motor);
 
