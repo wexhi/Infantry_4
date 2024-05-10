@@ -150,6 +150,7 @@ void RobotCMDTask(void)
     chassis_cmd_send.friction_mode = shoot_cmd_send.friction_mode;
     chassis_cmd_send.vision_mode   = vision_ctrl->is_tracking ? LOCK : UNLOCK;
     chassis_cmd_send.loader_mode   = shoot_cmd_send.load_mode;
+    chassis_cmd_send.lid_mode      = shoot_cmd_send.lid_mode;
 
     // 其他应用所需的控制数据在remotecontrolsetmode和mousekeysetmode中完成设置
 #ifdef ONE_BOARD
@@ -378,17 +379,20 @@ static void MouseKeySet(void)
 
     switch (video_data[TEMPV].key_count[V_KEY_PRESS][V_Key_C] % 3) {
         case 0:
-            chassis_speed_buff            = 1.f;
-            chassis_cmd_send.chassis_mode = CHASSIS_SLOW;
+            chassis_speed_buff              = 1.f;
+            chassis_cmd_send.chassis_mode   = CHASSIS_SLOW;
+            chassis_cmd_send.super_cap_mode = SUPER_CAP_OFF;
             break;
         case 1:
-            chassis_speed_buff            = 1.4f;
-            chassis_cmd_send.chassis_mode = CHASSIS_MEDIUM;
+            chassis_speed_buff              = 1.4f;
+            chassis_cmd_send.chassis_mode   = CHASSIS_MEDIUM;
+            chassis_cmd_send.super_cap_mode = SUPER_CAP_ON;
             break;
         default:
         case 2:
-            chassis_speed_buff            = 2.f;
-            chassis_cmd_send.chassis_mode = CHASSIS_FAST;
+            chassis_speed_buff              = 2.f;
+            chassis_cmd_send.chassis_mode   = CHASSIS_FAST;
+            chassis_cmd_send.super_cap_mode = SUPER_CAP_ON;
             break;
     }
     chassis_cmd_send.vx = (video_data[TEMPV].key[V_KEY_PRESS].d - video_data[TEMPV].key[KEY_PRESS].a) * 20000 * chassis_speed_buff; // 系数待测
@@ -445,15 +449,15 @@ static void MouseKeySet(void)
     {
         case 0:
             shoot_cmd_send.load_mode  = LOAD_SLOW;
-            shoot_cmd_send.shoot_rate = 4;
+            shoot_cmd_send.shoot_rate = 2;
             break;
         case 1:
             shoot_cmd_send.load_mode  = LOAD_MEDIUM;
-            shoot_cmd_send.shoot_rate = 8;
+            shoot_cmd_send.shoot_rate = 4;
             break;
         case 2:
             shoot_cmd_send.load_mode  = LOAD_FAST;
-            shoot_cmd_send.shoot_rate = 16;
+            shoot_cmd_send.shoot_rate = 8;
             break;
         default:
             shoot_cmd_send.load_mode = LOAD_1_BULLET;

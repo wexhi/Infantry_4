@@ -293,11 +293,14 @@ void ChassisTask()
     chassis_feedback_data.shoot_heat  = referee_data->PowerHeatData.shooter_17mm_1_barrel_heat;
     chassis_feedback_data.shoot_limit = referee_data->GameRobotState.shooter_barrel_heat_limit;
 
-    ui_data.ui_mode       = chassis_cmd_recv.ui_mode;
-    ui_data.chassis_mode  = chassis_cmd_recv.chassis_mode;
-    ui_data.friction_mode = chassis_cmd_recv.friction_mode;
-    ui_data.vision_mode   = chassis_cmd_recv.vision_mode;
-
+    ui_data.ui_mode        = chassis_cmd_recv.ui_mode;
+    ui_data.chassis_mode   = chassis_cmd_recv.chassis_mode;
+    ui_data.friction_mode  = chassis_cmd_recv.friction_mode;
+    ui_data.vision_mode    = chassis_cmd_recv.vision_mode;
+    ui_data.level          = referee_data->GameRobotState.robot_level;
+    ui_data.lid_mode       = chassis_cmd_recv.lid_mode;
+    ui_data.super_cap_mode = chassis_cmd_recv.super_cap_mode;
+    ui_data.loader_mode    = chassis_cmd_recv.loader_mode;
     // 推送反馈消息
 #ifdef ONE_BOARD
     PubPushMessage(chassis_pub, (void *)&chassis_feedback_data);
