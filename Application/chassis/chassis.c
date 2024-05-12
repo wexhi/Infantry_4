@@ -54,16 +54,16 @@ void ChassisInit()
         .can_init_config.can_handle   = &hcan1,
         .controller_param_init_config = {
             .speed_PID = {
-                .Kp            = 10,   // 4.5
-                .Ki            = 0,    // 0
-                .Kd            = 0.02, // 0
+                .Kp            = 1, // 4.5
+                .Ki            = 0, // 0
+                .Kd            = 0, // 0
                 .IntegralLimit = 5000,
                 .Improve       = PID_Trapezoid_Intergral | PID_Integral_Limit | PID_Derivative_On_Measurement,
                 .MaxOut        = 12000,
             },
             .current_PID = {
-                .Kp            = 0.9, // 0.4
-                .Ki            = 0,   // 0
+                .Kp            = 1., // 0.4
+                .Ki            = 0,  // 0
                 .Kd            = 0,
                 .IntegralLimit = 3000,
                 .Improve       = PID_Trapezoid_Intergral | PID_Integral_Limit | PID_Derivative_On_Measurement,
@@ -157,70 +157,54 @@ static void MecanumCalculate()
 static void LimitChassisOutput()
 {
     // 功率限制待添加
-    // Motor_Speed_limiting();
-    // chassis_power        = referee_data->PowerHeatData.chassis_power;
-    // chassis_power_buffer = referee_data->PowerHeatData.buffer_energy;
-    // if (chassis_power > 960) {
-    //     Motor_Speed_limiting();
-    // } else {
-    //     chassis_speed_err = (fabsf(vt_lf - motor_lf->measure.speed_aps) +
-    //                          fabsf(vt_rf - motor_rf->measure.speed_aps) +
-    //                          fabsf(vt_lb - motor_lb->measure.speed_aps) +
-    //                          fabsf(vt_rb - motor_rb->measure.speed_aps)); // 获取4个电机的速度误差
+    uint16_t chassis_power_buffer = 0; // 底盘功率缓冲区
+    uint16_t chassis_power        = 0;
+    uint16_t chassis_power_limit  = 0;
+    float P_limit                 = 1; // 功率限制系数
 
-    //     // 当有误差时,期望滞后占比环，增益个体加速度
-    //     if (chassis_speed_err != 0) {
-    //         scaling_lf = (vt_lf - motor_lf->measure.speed_aps) / chassis_speed_err;
-    //         scaling_rf = (vt_rf - motor_rf->measure.speed_aps) / chassis_speed_err;
-    //         scaling_lb = (vt_lb - motor_lb->measure.speed_aps) / chassis_speed_err;
-    //         scaling_rb = (vt_rb - motor_rb->measure.speed_aps) / chassis_speed_err;
-    //     } else {
-    //         scaling_lf = 0.25f, scaling_rf = 0.25f, scaling_lb = 0.25f, scaling_rb = 0.25f;
-    //     }
-    //     /*功率满输出占比环，车总增益加速度*/
-    //     K_limit = chassis_speed_err / (CHASSIS_MAX_POWER * 4); // 每个轮子最大速度 * 4
+    chassis_power_buffer = referee_data->PowerHeatData.buffer_energy;
+    chassis_power        = referee_data->PowerHeatData.chassis_power;
+    chassis_power_limit  = referee_data->GameRobotState.chassis_power_limit;
 
-    //     VAL_LIMIT(K_limit, -1, 1); // 限制K_limit的范围,限制绝对值不能超过1，也就是Chassis_pidout一定要小于某个速度值，不能超调
-
-    //     /*缓冲能量占比环，总体约束*/
-    //     if (chassis_power_buffer < 50 && chassis_power_buffer >= 40)
-    //         P_limit = 0.9; // 近似于以一个线性来约束比例（为了保守可以调低Plimit，但会影响响应速度）
-    //     else if (chassis_power_buffer < 40 && chassis_power_buffer >= 35)
-    //         P_limit = 0.75;
-    //     else if (chassis_power_buffer < 35 && chassis_power_buffer >= 30)
-    //         P_limit = 0.5;
-    //     else if (chassis_power_buffer < 30 && chassis_power_buffer >= 20)
-    //         P_limit = 0.25;
-    //     else if (chassis_power_buffer < 20 && chassis_power_buffer >= 10)
-    //         P_limit = 0.125;
-    //     else if (chassis_power_buffer < 10 && chassis_power_buffer > 0)
-    //         P_limit = 0.05;
-    //     else {
-    //         P_limit = 1;
-    //     }
-
-    //     vt_lf = scaling_lf * (K_limit * CHASSIS_MAX_SPEED) * P_limit;
-    //     vt_rf = scaling_rf * (K_limit * CHASSIS_MAX_SPEED) * P_limit;
-    //     vt_lb = scaling_lb * (K_limit * CHASSIS_MAX_SPEED) * P_limit;
-    //     vt_rb = scaling_rb * (K_limit * CHASSIS_MAX_SPEED) * P_limit;
-    // }
     switch (chassis_cmd_recv.super_cap_mode) {
         case SUPER_CAP_OFF:
-            SuperCapSet(referee_data->PowerHeatData.buffer_energy, referee_data->PowerHeatData.chassis_power, 0); // 设置超级电容数据
+            SuperCapSet(referee_data->PowerHeatData.buffer_energy, referee_data->GameRobotState.chassis_power_limit, 2); // 设置超级电容数据
             break;
-        case SUCKER_ON:
-            SuperCapSet(referee_data->PowerHeatData.buffer_energy, referee_data->PowerHeatData.chassis_power, 1); // 设置超级电容数据
+        case SUPER_CAP_ON:
+            SuperCapSet(referee_data->PowerHeatData.buffer_energy, referee_data->GameRobotState.chassis_power_limit, 1); // 设置超级电容数据
             break;
         default:
             break;
     }
 
+    if (super_cap->cap_data.status == 2) {
+        /*缓冲能量占比环，总体约束*/
+        if (chassis_power_buffer >= 50)
+            P_limit = 1;
+        else if (chassis_power_buffer < 50 && chassis_power_buffer >= 40)
+            P_limit = 0.9; // 近似于以一个线性来约束比例（为了保守可以调低Plimit，但会影响响应速度）
+        else if (chassis_power_buffer < 40 && chassis_power_buffer >= 35)
+            P_limit = 0.75;
+        else if (chassis_power_buffer < 35 && chassis_power_buffer >= 30)
+            P_limit = 0.5;
+        else if (chassis_power_buffer < 30 && chassis_power_buffer >= 20)
+            P_limit = 0.25;
+        else if (chassis_power > chassis_power_limit && chassis_power_buffer < 20 && chassis_power_buffer >= 10)
+            P_limit = 0.125;
+        else if (chassis_power > chassis_power_limit && chassis_power_buffer < 10 && chassis_power_buffer > 0)
+            P_limit = 0.05;
+        else
+            P_limit = 0.125;
+    } else {
+        P_limit = 1;
+    }
+    ui_data.Chassis_Power_Data.chassis_power_mx = super_cap->cap_data.voltage;
     SuperCapSend(); // 发送超级电容数据
     // 完成功率限制后进行电机参考输入设定
-    DJIMotorSetRef(motor_lf, vt_lf);
-    DJIMotorSetRef(motor_rf, vt_rf);
-    DJIMotorSetRef(motor_lb, vt_lb);
-    DJIMotorSetRef(motor_rb, vt_rb);
+    DJIMotorSetRef(motor_lf, vt_lf * P_limit);
+    DJIMotorSetRef(motor_rf, vt_rf * P_limit);
+    DJIMotorSetRef(motor_lb, vt_lb * P_limit);
+    DJIMotorSetRef(motor_rb, vt_rb * P_limit);
 }
 
 /**
