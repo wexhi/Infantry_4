@@ -58,7 +58,7 @@ static Graph_Data_t UI_shoot_line[10]; // 射击准线
 static Graph_Data_t UI_Energy[3];      // 电容能量条
 static String_Data_t UI_State_sta[7];  // 机器人状态,静态只需画一次
 static String_Data_t UI_State_dyn[7];  // 机器人状态,动态先add才能change
-static uint32_t shoot_line_location[10] = {540, 960, 490, 443, 425,453,433};
+static uint32_t shoot_line_location[10] = {540, 960, 490, 443, 425, 453, 433};
 
 void MyUIInit()
 {
@@ -78,15 +78,14 @@ void MyUIInit()
     UILineDraw(&UI_shoot_line[0], "sl0", UI_Graph_ADD, 8, UI_Color_White, 3, 710, shoot_line_location[0], 1210, shoot_line_location[0]);
     UILineDraw(&UI_shoot_line[1], "sl1", UI_Graph_ADD, 8, UI_Color_White, 3, shoot_line_location[1], 340, shoot_line_location[1], 740);
 
-    
     UILineDraw(&UI_shoot_line[2], "sl2", UI_Graph_ADD, 7, UI_Color_Yellow, 2, 810, shoot_line_location[2], 1110, shoot_line_location[2]);
-      //5m前哨辅助线 
-   UILineDraw(&UI_shoot_line[5], "sl5", UI_Graph_ADD, 7, UI_Color_Yellow, 2, 930, shoot_line_location[5], 990, shoot_line_location[5]);
-   UILineDraw(&UI_shoot_line[3], "sl3", UI_Graph_ADD, 7, UI_Color_Yellow, 2, 880, shoot_line_location[3], 1040, shoot_line_location[3]);
-   UILineDraw(&UI_shoot_line[6], "sl6", UI_Graph_ADD, 7, UI_Color_Yellow, 2, 930, shoot_line_location[6], 990, shoot_line_location[6]); 
-       //8m前哨辅助线
+    // 5m前哨辅助线
+    UILineDraw(&UI_shoot_line[5], "sl5", UI_Graph_ADD, 7, UI_Color_Yellow, 2, 930, shoot_line_location[5], 990, shoot_line_location[5]);
+    UILineDraw(&UI_shoot_line[3], "sl3", UI_Graph_ADD, 7, UI_Color_Yellow, 2, 880, shoot_line_location[3], 1040, shoot_line_location[3]);
+    UILineDraw(&UI_shoot_line[6], "sl6", UI_Graph_ADD, 7, UI_Color_Yellow, 2, 930, shoot_line_location[6], 990, shoot_line_location[6]);
+    // 8m前哨辅助线
     UILineDraw(&UI_shoot_line[4], "sl4", UI_Graph_ADD, 7, UI_Color_Yellow, 2, 910, shoot_line_location[4], 1010, shoot_line_location[4]);
-    UIGraphRefresh(&referee_recv_info->referee_id, 7, UI_shoot_line[0], UI_shoot_line[1], UI_shoot_line[2], UI_shoot_line[3], UI_shoot_line[4],UI_shoot_line[5],UI_shoot_line[6]);
+    UIGraphRefresh(&referee_recv_info->referee_id, 7, UI_shoot_line[0], UI_shoot_line[1], UI_shoot_line[2], UI_shoot_line[3], UI_shoot_line[4], UI_shoot_line[5], UI_shoot_line[6]);
 
     // 绘制车辆状态标志指示
     UICharDraw(&UI_State_sta[0], "ss0", UI_Graph_ADD, 8, UI_Color_Main, 15, 2, 150, 800, "level:");
