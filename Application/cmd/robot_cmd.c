@@ -384,19 +384,20 @@ static void MouseKeySet(void)
             chassis_cmd_send.super_cap_mode = SUPER_CAP_OFF;
             break;
         case 1:
-            chassis_speed_buff              = 1.5f;
+            chassis_speed_buff              = 2.5f;
             chassis_cmd_send.chassis_mode   = CHASSIS_MEDIUM;
             chassis_cmd_send.super_cap_mode = SUPER_CAP_ON;
             break;
         default:
         case 2:
-            chassis_speed_buff              = 2.f;
-            chassis_cmd_send.chassis_mode   = CHASSIS_FAST;
+            chassis_speed_buff              = 6.f;
+            // chassis_cmd_send.chassis_mode   = CHASSIS_FAST;
+            chassis_cmd_send.chassis_mode   = CHASSIS_FOLLOW_GIMBAL_YAW;
             chassis_cmd_send.super_cap_mode = SUPER_CAP_ON;
             break;
     }
-    chassis_cmd_send.vx = (video_data[TEMPV].key[V_KEY_PRESS].d - video_data[TEMPV].key[KEY_PRESS].a) * 40000 * chassis_speed_buff; // 系数待测
-    chassis_cmd_send.vy = (video_data[TEMPV].key[V_KEY_PRESS].w - video_data[TEMPV].key[KEY_PRESS].s) * 40000 * chassis_speed_buff;
+    chassis_cmd_send.vx = -(video_data[TEMPV].key[V_KEY_PRESS].d - video_data[TEMPV].key[KEY_PRESS].a) * 50000 * chassis_speed_buff; // 系数待测
+    chassis_cmd_send.vy = -(video_data[TEMPV].key[V_KEY_PRESS].w - video_data[TEMPV].key[KEY_PRESS].s) * 50000 * chassis_speed_buff;
     chassis_cmd_send.wz = video_data[TEMPV].key[V_KEY_PRESS].shift * 14000 * chassis_speed_buff;
 
     gimbal_cmd_send.yaw -= (float)video_data[TEMPV].key_data.mouse_x / 660 * 2.5; // 系数待测

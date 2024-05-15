@@ -33,6 +33,7 @@ static DJIMotor_Instance *motor_lf, *motor_rf, *motor_lb, *motor_rb; // left rig
 /* 私有函数计算的中介变量,设为静态避免参数传递的开销 */
 static float chassis_vx, chassis_vy;     // 将云台系的速度投影到底盘
 static float vt_lf, vt_rf, vt_lb, vt_rb; // 底盘速度解算后的临时输出,待进行限幅
+static PID_Instance chassis_follow_pid;  // 底盘跟随PID
 // 功率限制算法的变量定义
 // static float K_limit = 1.0f, P_limit = 0;                    // 功率限制系数
 // static float chassis_power;                                  // 底盘功率
@@ -94,6 +95,17 @@ void ChassisInit()
     chassis_motor_config.can_init_config.tx_id                             = 4;
     chassis_motor_config.controller_setting_init_config.motor_reverse_flag = MOTOR_DIRECTION_NORMAL;
     motor_rb                                                               = DJIMotorInit(&chassis_motor_config);
+
+    PID_Init_Config_s chassis_follow_pid_conf = {
+        .Kp                = 50,
+        .Kd                = 0,
+        .Ki                = 0.0f,
+        .MaxOut            = 12000,
+        .DeadBand          = 2.0,
+        .Improve           = PID_DerivativeFilter | PID_Derivative_On_Measurement,
+        .Derivative_LPF_RC = 0.05,
+    };
+    PIDInit(&chassis_follow_pid, &chassis_follow_pid_conf);
 
     referee_data = UITaskInit(&huart6, &ui_data); // 裁判系统初始化,会同时初始化UI
 
@@ -247,10 +259,7 @@ void ChassisTask()
     // 根据控制模式设定旋转速度
     switch (chassis_cmd_recv.chassis_mode) {
         case CHASSIS_FOLLOW_GIMBAL_YAW: // 跟随云台,不单独设置pid,以误差角度平方为速度输出
-            if (chassis_cmd_recv.offset_angle > 0.1f || chassis_cmd_recv.offset_angle < -0.1f)
-                chassis_cmd_recv.wz = -6.f * chassis_cmd_recv.offset_angle * abs(chassis_cmd_recv.offset_angle);
-            else
-                chassis_cmd_recv.wz = 0;
+            chassis_cmd_recv.wz = -PIDCalculate(&chassis_follow_pid, chassis_cmd_recv.offset_angle, 0);
             break;
         default:
             break;

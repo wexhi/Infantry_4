@@ -94,7 +94,7 @@ __attribute__((noreturn)) void StartROBOTTASK(void const *argument)
     // 200Hz-500Hz,若有额外的控制任务如平衡步兵可能需要提升至1kHz
     for (;;) {
         RobotTask();
-        osDelay(5);
+        osDelay(2);
     }
 }
 
