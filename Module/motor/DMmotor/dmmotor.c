@@ -76,7 +76,7 @@ static void DMMotorLostCallback(void *motor_ptr)
     DM_MotorInstance *motor = (DM_MotorInstance *)motor_ptr;
     DMMotorEnable(motor);
     DWT_Delay(0.1);
-    DMMotorSetMode(DM_CMD_MOTOR_MODE, motor);
+    DMMotorSetMode(DM_CMD_CLEAR_ERROR, motor);
     DMMotorEnable(motor);
     DWT_Delay(0.1);
     DMMotorSetMode(DM_CMD_MOTOR_MODE, motor);
@@ -180,6 +180,7 @@ DM_MotorInstance *DMMotorInit(Motor_Init_Config_s *config)
     DMMotorSetMode(DM_CMD_MOTOR_MODE, motor); // 记得打开
     // 失能，测量数据用
     // DMMotorSetMode(DM_CMD_RESET_MODE, motor);
+    // !!! 慎用，懒得焊TXRX线 DMMotorSetMode(DM_CMD_ZERO_POSITION, motor);
     DWT_Delay(0.1);
     dm_motor_instance[idx++] = motor;
     return motor;
@@ -418,7 +419,15 @@ void DMMotorTask(void const *argument)
     while (1) {
         time++;
         // 未使能且电机应当激活时，发送激活指令
-        if (time % 200 == 0) {
+        if (time % 200 == 0 && motor->stop_flag == MOTOR_ENALBED) {
+            if (motor->measure.state != 0 && motor->measure.state != 1) {
+                DMMotorEnable(motor);
+                DMMotorSetMode(DM_CMD_CLEAR_ERROR, motor);
+                osDelay(2);
+                DMMotorSetMode(DM_CMD_MOTOR_MODE, motor);
+                osDelay(2);
+                return;
+            }
             DMMotorEnable(motor);
             DMMotorSetMode(DM_CMD_MOTOR_MODE, motor);
             osDelay(2);

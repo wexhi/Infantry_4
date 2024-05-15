@@ -258,7 +258,7 @@ void ChassisTask()
     // 根据控制模式设定旋转速度
     // 根据控制模式设定旋转速度
     switch (chassis_cmd_recv.chassis_mode) {
-        case CHASSIS_FOLLOW_GIMBAL_YAW: // 跟随云台,不单独设置pid,以误差角度平方为速度输出
+        case CHASSIS_FOLLOW_GIMBAL_YAW: // 跟随云台,单独设置pid
             chassis_cmd_recv.wz = -PIDCalculate(&chassis_follow_pid, chassis_cmd_recv.offset_angle, 0);
             break;
         default:
