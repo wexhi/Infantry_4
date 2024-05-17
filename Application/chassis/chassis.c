@@ -189,7 +189,7 @@ static void LimitChassisOutput()
             break;
     }
 
-    if (super_cap->cap_data.status == 2) {
+    if (super_cap->cap_data.status == 0) {
         /*缓冲能量占比环，总体约束*/
         if (chassis_power_buffer >= 50)
             P_limit = 1;

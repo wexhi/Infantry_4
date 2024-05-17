@@ -221,12 +221,12 @@ typedef struct
     chassis_mode_e chassis_mode;
     super_cap_mode_e super_cap_mode;
     // UI部分
-    ui_mode_e ui_mode;             //  UI状态
-    friction_mode_e friction_mode; //  摩擦轮状态
-    loader_mode_e loader_mode;     //  射频状态
-    vision_mode_e vision_mode;     //  视觉状态
+    ui_mode_e ui_mode;                   //  UI状态
+    friction_mode_e friction_mode;       //  摩擦轮状态
+    loader_mode_e loader_mode;           //  射频状态
+    vision_mode_e vision_mode;           //  视觉状态
     vision_lock_mode_e vision_lock_mode; // 视觉锁定的目标状态
-    lid_mode_e lid_mode;           //  弹舱盖状态
+    lid_mode_e lid_mode;                 //  弹舱盖状态
     //  ...
 
 } Chassis_Ctrl_Cmd_s;

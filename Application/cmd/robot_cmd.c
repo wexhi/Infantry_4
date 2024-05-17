@@ -128,7 +128,7 @@ void RobotCMDTask(void)
     // 根据gimbal的反馈值计算云台和底盘正方向的夹角,不需要传参,通过static私有变量完成
     CalcOffsetAngle();
 
-    shoot_cmd_send.rest_heat = chassis_fetch_data.shoot_limit - chassis_fetch_data.shoot_heat - 30; // 计算剩余热量
+    shoot_cmd_send.rest_heat = chassis_fetch_data.shoot_limit - chassis_fetch_data.shoot_heat - 20; // 计算剩余热量
     if (!rc_data[TEMP].rc.switch_right ||
         switch_is_down(rc_data[TEMP].rc.switch_right)) // 当收不到遥控器信号时，使用图传链路
         MouseKeySet();
@@ -224,8 +224,8 @@ static void RemoteControlSet(void)
 
     // 底盘参数,目前没有加入小陀螺(调试似乎暂时没有必要),系数需要调整
     // max 70.f,参数过大会达到电机的峰值速度，导致底盘漂移等问题，且毫无意义
-    chassis_cmd_send.vx = 60.0f * (float)rc_data[TEMP].rc.rocker_l_; // _水平方向
-    chassis_cmd_send.vy = 60.0f * (float)rc_data[TEMP].rc.rocker_l1; // 1竖直方向
+    chassis_cmd_send.vx = -60.0f * (float)rc_data[TEMP].rc.rocker_l_; // _水平方向
+    chassis_cmd_send.vy = -60.0f * (float)rc_data[TEMP].rc.rocker_l1; // 1竖直方向
     chassis_cmd_send.wz = -30.0f * (float)rc_data[TEMP].rc.dial;
 
     // 发射参数
@@ -396,9 +396,17 @@ static void MouseKeySet(void)
             chassis_cmd_send.super_cap_mode = SUPER_CAP_ON;
             break;
     }
+
+    // 若在底盘跟随云台模式下按住shift键，则强制改为小陀螺模式
+    if (video_data[TEMPV].key[V_KEY_PRESS].shift && chassis_cmd_send.chassis_mode == CHASSIS_FOLLOW_GIMBAL_YAW) {
+        chassis_speed_buff              = 6.f;
+        chassis_cmd_send.chassis_mode   = CHASSIS_FAST;
+        chassis_cmd_send.super_cap_mode = SUPER_CAP_ON;
+    }
+
     chassis_cmd_send.vx = -(video_data[TEMPV].key[V_KEY_PRESS].d - video_data[TEMPV].key[KEY_PRESS].a) * 50000 * chassis_speed_buff; // 系数待测
     chassis_cmd_send.vy = -(video_data[TEMPV].key[V_KEY_PRESS].w - video_data[TEMPV].key[KEY_PRESS].s) * 50000 * chassis_speed_buff;
-    chassis_cmd_send.wz = video_data[TEMPV].key[V_KEY_PRESS].shift * 14000 * chassis_speed_buff;
+    chassis_cmd_send.wz = video_data[TEMPV].key[V_KEY_PRESS].shift * 24000 * chassis_speed_buff;
 
     gimbal_cmd_send.yaw -= (float)video_data[TEMPV].key_data.mouse_x / 660 * 2.5; // 系数待测
     gimbal_cmd_send.pitch += (float)video_data[TEMPV].key_data.mouse_y / 660 * 2.5;
@@ -418,7 +426,16 @@ static void MouseKeySet(void)
         chassis_cmd_send.vision_mode = LOCK;
         if (video_data[TEMPV].key_data.right_button_down) // 右键开启自瞄
         {
-            gimbal_cmd_send.yaw   = (vision_ctrl->yaw == 0 ? gimbal_cmd_send.yaw : vision_ctrl->yaw);
+            float imu_ = gimbal_fetch_data.gimbal_imu_data.YawTotalAngle - (int)gimbal_fetch_data.gimbal_imu_data.YawTotalAngle / 360 * 360;
+            if ((int)(imu_ - vision_ctrl->yaw + 360) % 360 < 180) // 逆时针
+            {
+                gimbal_cmd_send.yaw = gimbal_fetch_data.gimbal_imu_data.YawTotalAngle - ((imu_ - vision_ctrl->yaw + 360) - (int)(imu_ - vision_ctrl->yaw + 360) / 360 * 360);
+            } else {
+                gimbal_cmd_send.yaw = gimbal_fetch_data.gimbal_imu_data.YawTotalAngle + ((vision_ctrl->yaw - imu_ + 360) - (int)(vision_ctrl->yaw - imu_ + 360) / 360 * 360);
+            }
+            // gimbal_cmd_send.yaw   = gimbal_fetch_data.gimbal_imu_data.YawTotalAngle - vision_ctrl->yaw;
+
+            // gimbal_cmd_send.yaw   = (vision_ctrl->yaw == 0 ? gimbal_cmd_send.yaw : vision_ctrl->yaw);
             gimbal_cmd_send.pitch = (vision_ctrl->pitch == 0 ? gimbal_cmd_send.pitch : vision_ctrl->pitch);
         }
     } else {
@@ -507,4 +524,5 @@ static void EmergencyHandler(void)
     shoot_cmd_send.shoot_mode       = SHOOT_OFF;
     shoot_cmd_send.friction_mode    = FRICTION_OFF;
     shoot_cmd_send.load_mode        = LOAD_STOP;
+    shoot_cmd_send.lid_mode         = LID_OPEN;
 }
