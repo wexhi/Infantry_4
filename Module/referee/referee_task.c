@@ -92,7 +92,7 @@ void MyUIInit()
     UICharRefresh(&referee_recv_info->referee_id, UI_State_sta[0]);
     UICharDraw(&UI_State_sta[1], "ss1", UI_Graph_ADD, 8, UI_Color_Main, 15, 2, 150, 750, "chassis:");
     UICharRefresh(&referee_recv_info->referee_id, UI_State_sta[1]);
-    UICharDraw(&UI_State_sta[2], "ss2", UI_Graph_ADD, 8, UI_Color_Yellow, 15, 2, 150, 700, "gimbal:");
+    UICharDraw(&UI_State_sta[2], "ss2", UI_Graph_ADD, 8, UI_Color_Yellow, 15, 2, 150, 700, "target:");
     UICharRefresh(&referee_recv_info->referee_id, UI_State_sta[2]);
     UICharDraw(&UI_State_sta[3], "ss3", UI_Graph_ADD, 8, UI_Color_Orange, 15, 2, 150, 650, "cap:");
     UICharRefresh(&referee_recv_info->referee_id, UI_State_sta[3]);
@@ -109,7 +109,7 @@ void MyUIInit()
     UICharRefresh(&referee_recv_info->referee_id, UI_State_dyn[0]);
     UICharDraw(&UI_State_dyn[1], "sd1", UI_Graph_ADD, 8, UI_Color_Main, 15, 2, 270, 750, "fast     ");
     UICharRefresh(&referee_recv_info->referee_id, UI_State_dyn[1]);
-    UICharDraw(&UI_State_dyn[2], "sd2", UI_Graph_ADD, 8, UI_Color_Yellow, 15, 2, 270, 700, "zeroforce");
+    UICharDraw(&UI_State_dyn[2], "sd2", UI_Graph_ADD, 8, UI_Color_Yellow, 15, 2, 270, 700, "armor");
     UICharRefresh(&referee_recv_info->referee_id, UI_State_dyn[2]);
     UICharDraw(&UI_State_dyn[3], "sd3", UI_Graph_ADD, 8, UI_Color_Orange, 15, 2, 270, 650, "off");
     UICharRefresh(&referee_recv_info->referee_id, UI_State_dyn[3]);
@@ -244,24 +244,20 @@ static void MyUIRefresh(referee_info_t *referee_recv_info, Referee_Interactive_i
         UICharRefresh(&referee_recv_info->referee_id, UI_State_dyn[1]);
         _Interactive_data->Referee_Interactive_Flag.chassis_flag = 0;
     }
-    // gimbal
-    if (_Interactive_data->Referee_Interactive_Flag.gimbal_flag == 1) {
-        switch (_Interactive_data->gimbal_mode) {
-            case GIMBAL_ZERO_FORCE: {
-                UICharDraw(&UI_State_dyn[2], "sd2", UI_Graph_Change, 8, UI_Color_Yellow, 15, 2, 270, 700, "zeroforce");
+    // lock_mode
+    if (_Interactive_data->Referee_Interactive_Flag.vision_lock_flag == 1) {
+        switch (_Interactive_data->vision_lock_mode) {
+            case ARMOR: {
+                UICharDraw(&UI_State_dyn[2], "sd2", UI_Graph_Change, 8, UI_Color_Yellow, 15, 2, 270, 700, "armor");
                 break;
             }
-            case GIMBAL_FREE_MODE: {
-                UICharDraw(&UI_State_dyn[2], "sd2", UI_Graph_Change, 8, UI_Color_Yellow, 15, 2, 270, 700, "free     ");
-                break;
-            }
-            case GIMBAL_GYRO_MODE: {
-                UICharDraw(&UI_State_dyn[2], "sd2", UI_Graph_Change, 8, UI_Color_Yellow, 15, 2, 270, 700, "gyro     ");
+            case RUNNE: {
+                UICharDraw(&UI_State_dyn[2], "sd2", UI_Graph_Change, 8, UI_Color_Yellow, 15, 2, 270, 700, "runne");
                 break;
             }
         }
         UICharRefresh(&referee_recv_info->referee_id, UI_State_dyn[2]);
-        _Interactive_data->Referee_Interactive_Flag.gimbal_flag = 0;
+        _Interactive_data->Referee_Interactive_Flag.vision_lock_flag = 0;
     }
     // super_cap
     if (_Interactive_data->Referee_Interactive_Flag.super_cap_flag == 1) {
@@ -337,9 +333,9 @@ static void UIChangeCheck(Referee_Interactive_info_t *_Interactive_data)
         _Interactive_data->chassis_last_mode                     = _Interactive_data->chassis_mode;
     }
 
-    if (_Interactive_data->gimbal_mode != _Interactive_data->gimbal_last_mode) {
-        _Interactive_data->Referee_Interactive_Flag.gimbal_flag = 1;
-        _Interactive_data->gimbal_last_mode                     = _Interactive_data->gimbal_mode;
+    if (_Interactive_data->vision_lock_mode != _Interactive_data->vision_last_lock_mode) {
+        _Interactive_data->Referee_Interactive_Flag.vision_lock_flag = 1;
+        _Interactive_data->vision_last_lock_mode                     = _Interactive_data->vision_lock_mode;
     }
 
     if (_Interactive_data->shoot_mode != _Interactive_data->shoot_last_mode) {

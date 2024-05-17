@@ -97,11 +97,11 @@ void ChassisInit()
     motor_rb                                                               = DJIMotorInit(&chassis_motor_config);
 
     PID_Init_Config_s chassis_follow_pid_conf = {
-        .Kp                = 50,
-        .Kd                = 0,
+        .Kp                = 1620,
         .Ki                = 0.0f,
-        .MaxOut            = 12000,
-        .DeadBand          = 2.0,
+        .Kd                = 3.0f,
+        .MaxOut            = 13000,
+        .DeadBand          = 0.1,
         .Improve           = PID_DerivativeFilter | PID_Derivative_On_Measurement,
         .Derivative_LPF_RC = 0.05,
     };
@@ -259,7 +259,7 @@ void ChassisTask()
     // 根据控制模式设定旋转速度
     switch (chassis_cmd_recv.chassis_mode) {
         case CHASSIS_FOLLOW_GIMBAL_YAW: // 跟随云台,单独设置pid
-            chassis_cmd_recv.wz = -PIDCalculate(&chassis_follow_pid, chassis_cmd_recv.offset_angle, 0);
+            chassis_cmd_recv.wz = PIDCalculate(&chassis_follow_pid, chassis_cmd_recv.offset_angle, 0);
             break;
         default:
             break;
@@ -290,6 +290,7 @@ void ChassisTask()
     ui_data.chassis_mode   = chassis_cmd_recv.chassis_mode;
     ui_data.friction_mode  = chassis_cmd_recv.friction_mode;
     ui_data.vision_mode    = chassis_cmd_recv.vision_mode;
+    ui_data.vision_lock_mode = chassis_cmd_recv.vision_lock_mode;
     ui_data.level          = referee_data->GameRobotState.robot_level;
     ui_data.lid_mode       = chassis_cmd_recv.lid_mode;
     ui_data.super_cap_mode = chassis_cmd_recv.super_cap_mode;

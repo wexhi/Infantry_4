@@ -390,7 +390,7 @@ static void MouseKeySet(void)
             break;
         default:
         case 2:
-            chassis_speed_buff              = 6.f;
+            chassis_speed_buff = 6.f;
             // chassis_cmd_send.chassis_mode   = CHASSIS_FAST;
             chassis_cmd_send.chassis_mode   = CHASSIS_FOLLOW_GIMBAL_YAW;
             chassis_cmd_send.super_cap_mode = SUPER_CAP_ON;
@@ -405,9 +405,11 @@ static void MouseKeySet(void)
 
     switch (video_data[TEMPV].key_count[V_KEY_PRESS][V_Key_Z] % 2) {
         case 0:
+            chassis_cmd_send.vision_lock_mode = ARMOR;
             VisionSetEnergy(0);
             break;
         default:
+            chassis_cmd_send.vision_lock_mode = RUNNE;
             VisionSetEnergy(1);
             break;
     }
