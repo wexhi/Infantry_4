@@ -149,7 +149,6 @@ void RobotCMDTask(void)
     // 推送消息,双板通信,视觉通信等
     chassis_cmd_send.friction_mode = shoot_cmd_send.friction_mode;
     chassis_cmd_send.vision_mode   = vision_ctrl->is_tracking ? LOCK : UNLOCK;
-    chassis_cmd_send.loader_mode   = shoot_cmd_send.load_mode;
     chassis_cmd_send.lid_mode      = shoot_cmd_send.lid_mode;
 
     // 其他应用所需的控制数据在remotecontrolsetmode和mousekeysetmode中完成设置
@@ -198,10 +197,11 @@ static void CalcOffsetAngle()
  */
 static void RemoteControlSet(void)
 {
-    robot_state                   = ROBOT_READY;
-    shoot_cmd_send.shoot_mode     = SHOOT_ON;
-    chassis_cmd_send.chassis_mode = CHASSIS_SLOW; // 底盘模式
-    gimbal_cmd_send.gimbal_mode   = GIMBAL_GYRO_MODE;
+    robot_state                     = ROBOT_READY;
+    shoot_cmd_send.shoot_mode       = SHOOT_ON;
+    chassis_cmd_send.chassis_mode   = CHASSIS_SLOW; // 底盘模式
+    gimbal_cmd_send.gimbal_mode     = GIMBAL_GYRO_MODE;
+    chassis_cmd_send.super_cap_mode = SUPER_CAP_ON;
 
     // 左侧开关状态为[下],或视觉未识别到目标,纯遥控器拨杆控制
     if (switch_is_down(rc_data[TEMP].rc.switch_left) || !vision_ctrl->is_tracking) {
@@ -381,7 +381,7 @@ static void MouseKeySet(void)
         case 0:
             chassis_speed_buff              = 1.f;
             chassis_cmd_send.chassis_mode   = CHASSIS_SLOW;
-            chassis_cmd_send.super_cap_mode = SUPER_CAP_OFF;
+            chassis_cmd_send.super_cap_mode = SUPER_CAP_ON;
             break;
         case 1:
             chassis_speed_buff              = 2.5f;
@@ -426,16 +426,15 @@ static void MouseKeySet(void)
         chassis_cmd_send.vision_mode = LOCK;
         if (video_data[TEMPV].key_data.right_button_down) // 右键开启自瞄
         {
-            float imu_ = gimbal_fetch_data.gimbal_imu_data.YawTotalAngle - (int)gimbal_fetch_data.gimbal_imu_data.YawTotalAngle / 360 * 360;
-            if ((int)(imu_ - vision_ctrl->yaw + 360) % 360 < 180) // 逆时针
-            {
-                gimbal_cmd_send.yaw = gimbal_fetch_data.gimbal_imu_data.YawTotalAngle - ((imu_ - vision_ctrl->yaw + 360) - (int)(imu_ - vision_ctrl->yaw + 360) / 360 * 360);
-            } else {
-                gimbal_cmd_send.yaw = gimbal_fetch_data.gimbal_imu_data.YawTotalAngle + ((vision_ctrl->yaw - imu_ + 360) - (int)(vision_ctrl->yaw - imu_ + 360) / 360 * 360);
-            }
-            // gimbal_cmd_send.yaw   = gimbal_fetch_data.gimbal_imu_data.YawTotalAngle - vision_ctrl->yaw;
+            // float imu_ = gimbal_fetch_data.gimbal_imu_data.YawTotalAngle - (int)gimbal_fetch_data.gimbal_imu_data.YawTotalAngle / 360 * 360;
+            // if ((int)(imu_ - vision_ctrl->yaw + 360) % 360 < 180) // 逆时针
+            // {
+            //     gimbal_cmd_send.yaw = gimbal_fetch_data.gimbal_imu_data.YawTotalAngle - ((imu_ - vision_ctrl->yaw + 360) - (int)(imu_ - vision_ctrl->yaw + 360) / 360 * 360);
+            // } else {
+            //     gimbal_cmd_send.yaw = gimbal_fetch_data.gimbal_imu_data.YawTotalAngle + ((vision_ctrl->yaw - imu_ + 360) - (int)(vision_ctrl->yaw - imu_ + 360) / 360 * 360);
+            // }
 
-            // gimbal_cmd_send.yaw   = (vision_ctrl->yaw == 0 ? gimbal_cmd_send.yaw : vision_ctrl->yaw);
+            gimbal_cmd_send.yaw   = (vision_ctrl->yaw == 0 ? gimbal_cmd_send.yaw : vision_ctrl->yaw);
             gimbal_cmd_send.pitch = (vision_ctrl->pitch == 0 ? gimbal_cmd_send.pitch : vision_ctrl->pitch);
         }
     } else {
@@ -468,19 +467,23 @@ static void MouseKeySet(void)
     switch (video_data[TEMPV].key_count[V_KEY_PRESS][V_Key_B] % 4) // B键切换发弹模式
     {
         case 0:
-            shoot_cmd_send.load_mode  = LOAD_SLOW;
-            shoot_cmd_send.shoot_rate = 2;
+            shoot_cmd_send.load_mode     = LOAD_SLOW;
+            chassis_cmd_send.loader_mode = LOAD_SLOW; // 在此处处理是为了刷新UI
+            shoot_cmd_send.shoot_rate    = 2;
             break;
         case 1:
-            shoot_cmd_send.load_mode  = LOAD_MEDIUM;
-            shoot_cmd_send.shoot_rate = 4;
+            shoot_cmd_send.load_mode     = LOAD_MEDIUM;
+            chassis_cmd_send.loader_mode = LOAD_MEDIUM;
+            shoot_cmd_send.shoot_rate    = 4;
             break;
         case 2:
-            shoot_cmd_send.load_mode  = LOAD_FAST;
-            shoot_cmd_send.shoot_rate = 8;
+            shoot_cmd_send.load_mode     = LOAD_FAST;
+            chassis_cmd_send.loader_mode = LOAD_FAST;
+            shoot_cmd_send.shoot_rate    = 8;
             break;
         default:
-            shoot_cmd_send.load_mode = LOAD_1_BULLET;
+            shoot_cmd_send.load_mode     = LOAD_1_BULLET;
+            chassis_cmd_send.loader_mode = LOAD_1_BULLET;
             break;
     }
 
@@ -492,7 +495,8 @@ static void MouseKeySet(void)
 
     if (video_data[TEMPV].key[V_KEY_PRESS].f) // F键开启拨盘反转模式
     {
-        shoot_cmd_send.load_mode = LOAD_REVERSE;
+        shoot_cmd_send.load_mode     = LOAD_REVERSE;
+        chassis_cmd_send.loader_mode = LOAD_REVERSE;
     }
 
     switch (video_data[TEMPV].key_count[V_KEY_PRESS][V_Key_E] % 2) // E键开关弹舱
@@ -520,7 +524,7 @@ static void EmergencyHandler(void)
     robot_state                     = ROBOT_STOP;
     gimbal_cmd_send.gimbal_mode     = GIMBAL_ZERO_FORCE;
     chassis_cmd_send.chassis_mode   = CHASSIS_ZERO_FORCE;
-    chassis_cmd_send.super_cap_mode = SUPER_CAP_OFF;
+    chassis_cmd_send.super_cap_mode = SUPER_CAP_ON;
     shoot_cmd_send.shoot_mode       = SHOOT_OFF;
     shoot_cmd_send.friction_mode    = FRICTION_OFF;
     shoot_cmd_send.load_mode        = LOAD_STOP;

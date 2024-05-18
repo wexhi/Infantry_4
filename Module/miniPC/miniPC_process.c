@@ -3,12 +3,41 @@
 #include "robot_def.h"
 #include "crc_ref.h"
 #include "daemon.h"
+#include <math.h>
 
 static Vision_Instance *vision_instance; // 用于和视觉通信的串口实例
 static uint8_t *vis_recv_buff __attribute__((unused));
 static Daemon_Instance *vision_daemon_instance;
 // 全局变量区
 extern uint16_t CRC_INIT;
+
+// 标准化角度到0到360度范围内
+static float StandardizeAngle(float angle)
+{
+    float mod_angle = fmod(angle, 360.f);
+    if (mod_angle < 0) {
+        mod_angle += 360.0;
+    }
+    return mod_angle;
+}
+
+// 计算并返回新的 total_angle，使其接近目标角度
+static float AdjustNearestAngle(float total_angle, float target_angle)
+{
+    // 标准化当前角度
+    float standard_current_angle = StandardizeAngle(total_angle);
+    // 计算角度差
+    float delta_angle = target_angle - standard_current_angle;
+    // 调整角度差到 -180 到 180 范围内
+    if (delta_angle > 180.f) {
+        delta_angle -= 360.f;
+    } else if (delta_angle < -180.f) {
+        delta_angle += 360.f;
+    }
+    // 计算新的目标 totalangle
+    return total_angle + delta_angle;
+}
+
 /**
  * @brief 处理视觉传入的数据
  *
@@ -26,13 +55,9 @@ static void RecvProcess(Vision_Recv_s *recv, uint8_t *rx_buff)
     memcpy(&recv->checksum, &rx_buff[10], 2);
 
     /* 视觉数据处理 */
-    // if (recv->yaw > 180.0f)
-    //     yaw_send = recv->yaw - 360.0f;
-    // else
-    //     yaw_send = recv->yaw;
-
-    // is_tracking = recv->is_tracking;
-    // recv->pitch = -recv->pitch + 180;
+    float yaw_total  = vision_instance->send_data->yaw; // 保存当前总角度
+    float yaw_target = recv->yaw;
+    recv->yaw        = AdjustNearestAngle(yaw_total, yaw_target);
 }
 
 /**
