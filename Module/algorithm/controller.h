@@ -28,15 +28,16 @@
 
 // PID 优化环节使能标志位,通过位与可以判断启用的优化环节;也可以改成位域的形式
 typedef enum {
-    PID_IMPROVE_NONE                = 0b00000000, // 0000 0000
-    PID_Integral_Limit              = 0b00000001, // 0000 0001
-    PID_Derivative_On_Measurement   = 0b00000010, // 0000 0010
-    PID_Trapezoid_Intergral         = 0b00000100, // 0000 0100
-    PID_Proportional_On_Measurement = 0b00001000, // 0000 1000
-    PID_OutputFilter                = 0b00010000, // 0001 0000
-    PID_ChangingIntegrationRate     = 0b00100000, // 0010 0000
-    PID_DerivativeFilter            = 0b01000000, // 0100 0000
-    PID_ErrorHandle                 = 0b10000000, // 1000 0000
+    PID_IMPROVE_NONE                = 0b000000000, // 0000 0000
+    PID_Integral_Limit              = 0b000000001, // 0000 0001
+    PID_Derivative_On_Measurement   = 0b000000010, // 0000 0010
+    PID_Trapezoid_Intergral         = 0b000000100, // 0000 0100
+    PID_Proportional_On_Measurement = 0b000001000, // 0000 1000
+    PID_OutputFilter                = 0b000010000, // 0001 0000
+    PID_ChangingIntegrationRate     = 0b000100000, // 0010 0000
+    PID_DerivativeFilter            = 0b001000000, // 0100 0000
+    PID_ErrorHandle                 = 0b010000000, // 1000 0000
+    PID_Integral_Separation         = 0b100000000, // 新增积分分离
 } PID_Improvement_e;
 
 /* PID 报错类型枚举*/
@@ -64,11 +65,12 @@ typedef struct
 
     // improve parameter
     PID_Improvement_e Improve;
-    float IntegralLimit;     // 积分限幅
-    float CoefA;             // 变速积分 For Changing Integral
-    float CoefB;             // 变速积分 ITerm = Err*((A-abs(err)+B)/A)  when B<|err|<A+B
-    float Output_LPF_RC;     // 输出滤波器 RC = 1/omegac
-    float Derivative_LPF_RC; // 微分滤波器系数
+    float IntegralLimit;               // 积分限幅
+    float CoefA;                       // 变速积分 For Changing Integral
+    float CoefB;                       // 变速积分 ITerm = Err*((A-abs(err)+B)/A)  when B<|err|<A+B
+    float Output_LPF_RC;               // 输出滤波器 RC = 1/omegac
+    float Derivative_LPF_RC;           // 微分滤波器系数
+    float IntegralSeparationThreshold; // 积分分离阈值
 
     //-----------------------------------
     // for calculating
@@ -112,6 +114,7 @@ typedef struct // config parameter
     float CoefB;         // ITerm = Err*((A-abs(err)+B)/A)  when B<|err|<A+B
     float Output_LPF_RC; // RC = 1/omegac
     float Derivative_LPF_RC;
+    float IntegralSeparationThreshold; // 积分分离阈值
 } PID_Init_Config_s;
 
 /**

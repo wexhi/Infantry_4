@@ -76,6 +76,14 @@ static void f_Output_Filter(PID_Instance *pid)
                   pid->Last_Output * pid->Output_LPF_RC / (pid->Output_LPF_RC + pid->dt);
 }
 
+// 新增积分分离函数
+static void f_Integral_Separation(PID_Instance *pid)
+{
+    if (fabs(pid->Err) > pid->IntegralSeparationThreshold) {
+        pid->ITerm = 0; // 如果误差大于阈值，则禁用积分作用
+    }
+}
+
 // 输出限幅
 static void f_Output_Limit(PID_Instance *pid)
 {
@@ -123,12 +131,13 @@ void PIDInit(PID_Instance *pid, PID_Init_Config_s *config)
     pid->MaxOut   = config->MaxOut;
     pid->DeadBand = config->DeadBand;
 
-    pid->Improve           = config->Improve;
-    pid->IntegralLimit     = config->IntegralLimit;
-    pid->CoefA             = config->CoefA;
-    pid->CoefB             = config->CoefB;
-    pid->Output_LPF_RC     = config->Output_LPF_RC;
-    pid->Derivative_LPF_RC = config->Derivative_LPF_RC;
+    pid->Improve                     = config->Improve;
+    pid->IntegralLimit               = config->IntegralLimit;
+    pid->CoefA                       = config->CoefA;
+    pid->CoefB                       = config->CoefB;
+    pid->Output_LPF_RC               = config->Output_LPF_RC;
+    pid->Derivative_LPF_RC           = config->Derivative_LPF_RC;
+    pid->IntegralSeparationThreshold = config->IntegralSeparationThreshold; // 新增参数赋值
 
     DWT_GetDeltaT(&pid->DWT_CNT);
 }
@@ -172,6 +181,9 @@ float PIDCalculate(PID_Instance *pid, float measure, float ref)
         // 微分滤波器
         if (pid->Improve & PID_DerivativeFilter)
             f_Derivative_Filter(pid);
+        // 积分分离
+        if (pid->Improve & PID_Integral_Separation)
+            f_Integral_Separation(pid);
         // 积分限幅
         if (pid->Improve & PID_Integral_Limit)
             f_Integral_Limit(pid);
