@@ -68,6 +68,7 @@ static void RecvProcess(Vision_Recv_s *recv, uint8_t *rx_buff)
  */
 static void VisionOfflineCallback(void *id)
 {
+    // memset(vision_instance->recv_data + 1, 0, sizeof(Vision_Recv_s) - 1);
 #ifdef VISION_USE_UART
     USARTServiceInit(vision_instance->usart);
 #endif // !VISION_USE_UART
@@ -249,6 +250,7 @@ static void DecodeVision(uint16_t var)
         /* 接收校验位 */
         memcpy(&vision_instance->recv_data->checksum, &vis_recv_buff[VISION_RECV_SIZE - 2], 2);
         if (vision_instance->recv_data->checksum == Get_CRC16_Check_Sum(vis_recv_buff, VISION_RECV_SIZE - 2, CRC_INIT)) {
+            DaemonReload(vision_daemon_instance);
             RecvProcess(vision_instance->recv_data, vis_recv_buff);
         } else {
             memset(vision_instance->recv_data, 0, sizeof(Vision_Recv_s));
