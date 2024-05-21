@@ -48,11 +48,10 @@ static void RecvProcess(Vision_Recv_s *recv, uint8_t *rx_buff)
 {
     /* 使用memcpy接收浮点型小数 */
     recv->is_tracking = rx_buff[1];
-    memcpy(&recv->yaw, &rx_buff[2], 4);
-    memcpy(&recv->pitch, &rx_buff[6], 4);
 
-    /* 接收校验位 */
-    memcpy(&recv->checksum, &rx_buff[10], 2);
+    recv->is_shooting = rx_buff[2];
+    memcpy(&recv->yaw, &rx_buff[3], 4);
+    memcpy(&recv->pitch, &rx_buff[7], 4);
 
     /* 视觉数据处理 */
     float yaw_total  = vision_instance->send_data->yaw; // 保存当前总角度
@@ -247,7 +246,13 @@ static void DecodeVision(uint16_t var)
     UNUSED(var); // 仅为了消除警告
     if (vis_recv_buff[0] == vision_instance->recv_data->header) {
         // 读取视觉数据
-        RecvProcess(vision_instance->recv_data, vis_recv_buff);
+        /* 接收校验位 */
+        memcpy(&vision_instance->recv_data->checksum, &vis_recv_buff[VISION_RECV_SIZE - 2], 2);
+        if (vision_instance->recv_data->checksum == Get_CRC16_Check_Sum(vis_recv_buff, VISION_RECV_SIZE - 2, CRC_INIT)) {
+            RecvProcess(vision_instance->recv_data, vis_recv_buff);
+        } else {
+            memset(vision_instance->recv_data, 0, sizeof(Vision_Recv_s));
+        }
     }
 }
 /**

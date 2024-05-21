@@ -19,7 +19,7 @@
 #define VISION_SEND_HEADER 0x5Au // 视觉发送数据帧头
 #define VISION_SEND_TAIL   0xAAu // 视觉发送数据帧尾
 
-#define VISION_RECV_SIZE   12u // 当前为固定值,12字节
+#define VISION_RECV_SIZE   13u // 当前为固定值,12字节
 #define VISION_SEND_SIZE   20u
 
 // #pragma pack(1) // 1字节对齐
@@ -86,6 +86,7 @@ typedef struct
 {
     uint8_t header;
     uint8_t is_tracking;
+    uint8_t is_shooting; // 有人在眼，先别急啊
     float yaw;
     float pitch;
     uint16_t checksum;

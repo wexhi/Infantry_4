@@ -40,8 +40,8 @@ static PID_Instance chassis_follow_pid;  // 底盘跟随PID
 // static uint16_t chassis_power_buffer;                        // 底盘功率缓冲区
 // static float chassis_speed_err;                              // 底盘速度误差
 // static float scaling_lf, scaling_rf, scaling_lb, scaling_rb; // 电机输出缩放系数
-#define CHASSIS_MAX_POWER 240000.f // 底盘最大功率,15384 * 4，取了4个3508电机最大电流的一个保守值
-#define CHASSIS_MAX_SPEED 240000.f // 底盘最大速度,单位mm/s
+// #define CHASSIS_MAX_POWER 240000.f                           // 底盘最大功率,15384 * 4，取了4个3508电机最大电流的一个保守值
+// #define CHASSIS_MAX_SPEED 240000.f                           // 底盘最大速度,单位mm/s
 #ifdef CHASSIS_MCNAMEE_WHEEL
 #define CHASSIS_WHEEL_OFFSET 1.0f // 机器人底盘轮子修正偏移量
 #elif defined(CHASSIS_OMNI_WHEEL)
@@ -154,18 +154,16 @@ static void MecanumCalculate()
  * @brief 电机速度限制
  *
  */
+
 // static void Motor_Speed_limiting()
 // {
-//     VAL_LIMIT(vt_lf, -CHASSIS_MAX_SPEED, CHASSIS_MAX_SPEED);
-//     VAL_LIMIT(vt_rf, -CHASSIS_MAX_SPEED, CHASSIS_MAX_SPEED);
-//     VAL_LIMIT(vt_lb, -CHASSIS_MAX_SPEED, CHASSIS_MAX_SPEED);
-//     VAL_LIMIT(vt_rb, -CHASSIS_MAX_SPEED, CHASSIS_MAX_SPEED);
 // }
 
 /**
- * @brief 根据裁判系统和电容剩余容量对输出进行限制并设置电机参考值
+ * @brief
  *
  */
+// ** /
 static void LimitChassisOutput()
 {
     // 功率限制待添加
@@ -189,7 +187,7 @@ static void LimitChassisOutput()
             break;
     }
 
-    if (super_cap->cap_data.status == 0) {
+    if (super_cap->cap_data.status == 0 || super_cap->cap_data.voltage <= 12.f) {
         /*缓冲能量占比环，总体约束*/
         if (chassis_power_buffer >= 50)
             P_limit = 1;
@@ -286,15 +284,15 @@ void ChassisTask()
     chassis_feedback_data.shoot_heat  = referee_data->PowerHeatData.shooter_17mm_1_barrel_heat;
     chassis_feedback_data.shoot_limit = referee_data->GameRobotState.shooter_barrel_heat_limit;
 
-    ui_data.ui_mode        = chassis_cmd_recv.ui_mode;
-    ui_data.chassis_mode   = chassis_cmd_recv.chassis_mode;
-    ui_data.friction_mode  = chassis_cmd_recv.friction_mode;
-    ui_data.vision_mode    = chassis_cmd_recv.vision_mode;
+    ui_data.ui_mode          = chassis_cmd_recv.ui_mode;
+    ui_data.chassis_mode     = chassis_cmd_recv.chassis_mode;
+    ui_data.friction_mode    = chassis_cmd_recv.friction_mode;
+    ui_data.vision_mode      = chassis_cmd_recv.vision_mode;
     ui_data.vision_lock_mode = chassis_cmd_recv.vision_lock_mode;
-    ui_data.level          = referee_data->GameRobotState.robot_level;
-    ui_data.lid_mode       = chassis_cmd_recv.lid_mode;
-    ui_data.super_cap_mode = chassis_cmd_recv.super_cap_mode;
-    ui_data.loader_mode    = chassis_cmd_recv.loader_mode;
+    ui_data.level            = referee_data->GameRobotState.robot_level;
+    ui_data.lid_mode         = chassis_cmd_recv.lid_mode;
+    ui_data.super_cap_mode   = chassis_cmd_recv.super_cap_mode;
+    ui_data.loader_mode      = chassis_cmd_recv.loader_mode;
     // 推送反馈消息
 #ifdef ONE_BOARD
     PubPushMessage(chassis_pub, (void *)&chassis_feedback_data);

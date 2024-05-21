@@ -399,8 +399,8 @@ static void MouseKeySet(void)
 
     // 若在底盘跟随云台模式下按住shift键，则强制改为小陀螺模式
     if (video_data[TEMPV].key[V_KEY_PRESS].shift && chassis_cmd_send.chassis_mode == CHASSIS_FOLLOW_GIMBAL_YAW) {
-        chassis_speed_buff              = 6.f;
-        chassis_cmd_send.chassis_mode   = CHASSIS_FAST;
+        chassis_speed_buff              = 2.5f;
+        chassis_cmd_send.chassis_mode   = CHASSIS_MEDIUM;
         chassis_cmd_send.super_cap_mode = SUPER_CAP_ON;
     }
 
@@ -426,14 +426,6 @@ static void MouseKeySet(void)
         chassis_cmd_send.vision_mode = LOCK;
         if (video_data[TEMPV].key_data.right_button_down) // 右键开启自瞄
         {
-            // float imu_ = gimbal_fetch_data.gimbal_imu_data.YawTotalAngle - (int)gimbal_fetch_data.gimbal_imu_data.YawTotalAngle / 360 * 360;
-            // if ((int)(imu_ - vision_ctrl->yaw + 360) % 360 < 180) // 逆时针
-            // {
-            //     gimbal_cmd_send.yaw = gimbal_fetch_data.gimbal_imu_data.YawTotalAngle - ((imu_ - vision_ctrl->yaw + 360) - (int)(imu_ - vision_ctrl->yaw + 360) / 360 * 360);
-            // } else {
-            //     gimbal_cmd_send.yaw = gimbal_fetch_data.gimbal_imu_data.YawTotalAngle + ((vision_ctrl->yaw - imu_ + 360) - (int)(vision_ctrl->yaw - imu_ + 360) / 360 * 360);
-            // }
-
             gimbal_cmd_send.yaw   = (vision_ctrl->yaw == 0 ? gimbal_cmd_send.yaw : vision_ctrl->yaw);
             gimbal_cmd_send.pitch = (vision_ctrl->pitch == 0 ? gimbal_cmd_send.pitch : vision_ctrl->pitch);
         }
@@ -490,6 +482,11 @@ static void MouseKeySet(void)
     if (!video_data[TEMPV].key_data.left_button_down ||
         shoot_cmd_send.friction_mode == FRICTION_OFF ||
         shoot_cmd_send.rest_heat <= 0) {
+        shoot_cmd_send.load_mode = LOAD_STOP;
+    }
+
+    if (vision_ctrl->is_shooting == 0 && vision_ctrl->is_tracking == 1 &&
+        video_data[TEMPV].key_data.right_button_down) {
         shoot_cmd_send.load_mode = LOAD_STOP;
     }
 
