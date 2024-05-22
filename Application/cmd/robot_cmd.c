@@ -369,13 +369,13 @@ static void MouseKeySet(void)
 #endif
 
 #ifdef VIDEO_LINK
-    switch (video_data[TEMPV].key_count[V_KEY_PRESS_WITH_CTRL][V_Key_X] % 2) {
-        case 0:
-            EmergencyHandler();
-            return; // 当没有按下激活键时,直接返回
-        default:
-            break; // 当按下激活键时,继续执行
-    }
+    // switch (video_data[TEMPV].key_count[V_KEY_PRESS_WITH_CTRL][V_Key_X] % 2) {
+    //     case 0:
+    //         EmergencyHandler();
+    //         return; // 当没有按下激活键时,直接返回
+    //     default:
+    //         break; // 当按下激活键时,继续执行
+    // }
 
     switch (video_data[TEMPV].key_count[V_KEY_PRESS][V_Key_C] % 3) {
         case 0:
@@ -414,16 +414,19 @@ static void MouseKeySet(void)
     switch (video_data[TEMPV].key_count[V_KEY_PRESS][V_Key_Z] % 2) {
         case 0:
             chassis_cmd_send.vision_lock_mode = ARMOR;
+            gimbal_cmd_send.vision_lock_mode  = ARMOR;
             VisionSetEnergy(0);
             break;
         default:
             chassis_cmd_send.vision_lock_mode = RUNNE;
+            gimbal_cmd_send.vision_lock_mode  = RUNNE;
             VisionSetEnergy(1);
             break;
     }
 
     if (vision_ctrl->is_tracking) {
         chassis_cmd_send.vision_mode = LOCK;
+        gimbal_cmd_send.vision_mode  = LOCK;
         if (video_data[TEMPV].key_data.right_button_down) // 右键开启自瞄
         {
             gimbal_cmd_send.yaw   = (vision_ctrl->yaw == 0 ? gimbal_cmd_send.yaw : vision_ctrl->yaw);
@@ -431,6 +434,7 @@ static void MouseKeySet(void)
         }
     } else {
         chassis_cmd_send.vision_mode = UNLOCK;
+        gimbal_cmd_send.vision_mode  = UNLOCK;
     }
 
     // 云台软件限位

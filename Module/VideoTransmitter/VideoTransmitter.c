@@ -109,6 +109,10 @@ static void VideoTransmitterCallback()
 
 static void VideoTransmitterLostCallback()
 {
+    // memset(video_ctrl->key,0,sizeof(V_Key_t)*3);
+    // memset(video_ctrl->key_count,0,sizeof(uint16_t)*3*16);
+    // memset(&video_ctrl->key_data, 0, sizeof(remote_control_t));
+
     USARTServiceInit(video_usart_instance);
 }
 

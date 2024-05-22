@@ -14,7 +14,7 @@ static Gimbal_Upload_Data_s gimbal_feedback_data; // 回传给cmd的云台状态
 static Gimbal_Ctrl_Cmd_s gimbal_cmd_recv;         // 来自cmd的控制信息
 
 // 调试数据
-static float yaw_target, yaw_current, pitch_target, pitch_current;
+static float yaw_target, yaw_current, pitch_target, pitch_current, yaw_motor_angle, pitch_motor_angle;
 
 void GimbalInit()
 {
@@ -117,12 +117,33 @@ void GimbalTask()
     // 获取云台控制数据
     // 后续增加未收到数据的处理
     SubGetMessage(gimbal_sub, &gimbal_cmd_recv);
-    yaw_target    = gimbal_cmd_recv.yaw;
-    yaw_current   = gimba_IMU_data->YawTotalAngle;
-    pitch_target  = gimbal_cmd_recv.pitch;
-    pitch_current = gimba_IMU_data->Roll;
+    yaw_target        = gimbal_cmd_recv.yaw;
+    yaw_current       = gimba_IMU_data->YawTotalAngle;
+    pitch_target      = gimbal_cmd_recv.pitch;
+    pitch_current     = gimba_IMU_data->Roll;
+    yaw_motor_angle   = yaw_motor->measure.total_angle;
+    pitch_motor_angle = pitch_motor->measure.total_angle;
     // DJIMotorStop(yaw_motor);
     // DJIMotorStop(pitch_motor);
+
+    // 当视觉锁定目标时,根据视觉锁定模式进行不同的处理
+    if (gimbal_cmd_recv.vision_mode == LOCK) {
+        switch (gimbal_cmd_recv.vision_lock_mode) {
+            case ARMOR:
+                break;
+            case RUNNE:
+                yaw_motor->motor_controller.angle_PID.Kp = 0.47; // 0.5
+                yaw_motor->motor_controller.angle_PID.Ki = 0.01; // 0.01
+                yaw_motor->motor_controller.angle_PID.Kd = 0.01; // 0.01
+                break;
+            default:
+                break;
+        }
+    } else {
+        yaw_motor->motor_controller.angle_PID.Kp = 0.685; // 0.685
+        yaw_motor->motor_controller.angle_PID.Ki = 0.315; // 0.315
+        yaw_motor->motor_controller.angle_PID.Kd = 0.022; // 0.022
+    }
 
     // @todo:现在已不再需要电机反馈,实际上可以始终使用IMU的姿态数据来作为云台的反馈,yaw电机的offset只是用来跟随底盘
     // 根据控制模式进行电机反馈切换和过渡,视觉模式在robot_cmd模块就已经设置好,gimbal只看yaw_ref和pitch_ref

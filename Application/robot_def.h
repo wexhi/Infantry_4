@@ -258,6 +258,8 @@ typedef struct
     float chassis_rotate_wz;
 
     gimbal_mode_e gimbal_mode;
+    vision_mode_e vision_mode;
+    vision_lock_mode_e vision_lock_mode;
 } Gimbal_Ctrl_Cmd_s;
 
 // 双板时，下板cmd发布控制云台控制数据，由gimbal订阅
