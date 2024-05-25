@@ -503,10 +503,10 @@ static void MouseKeySet(void)
     switch (video_data[TEMPV].key_count[V_KEY_PRESS][V_Key_E] % 2) // E键开关弹舱
     {
         case 0:
-            shoot_cmd_send.lid_mode = LID_OPEN;
+            shoot_cmd_send.lid_mode = LID_CLOSE;
             break;
         default:
-            shoot_cmd_send.lid_mode = LID_CLOSE;
+            shoot_cmd_send.lid_mode = LID_OPEN;
             break;
     }
 #endif
@@ -529,5 +529,5 @@ static void EmergencyHandler(void)
     shoot_cmd_send.shoot_mode       = SHOOT_OFF;
     shoot_cmd_send.friction_mode    = FRICTION_OFF;
     shoot_cmd_send.load_mode        = LOAD_STOP;
-    shoot_cmd_send.lid_mode         = LID_OPEN;
+    shoot_cmd_send.lid_mode         = LID_CLOSE;
 }

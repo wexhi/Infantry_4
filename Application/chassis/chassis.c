@@ -189,22 +189,25 @@ static void LimitChassisOutput()
 
     if (super_cap->cap_data.status == 0 || super_cap->cap_data.voltage <= 12.f) {
         /*缓冲能量占比环，总体约束*/
-        if (chassis_power_buffer >= 50)
+        if (chassis_power_buffer >= 50) {
             P_limit = 1;
-        else if (chassis_power_buffer < 50 && chassis_power_buffer >= 40)
-            P_limit = 0.9; // 近似于以一个线性来约束比例（为了保守可以调低Plimit，但会影响响应速度）
-        else if (chassis_power_buffer < 40 && chassis_power_buffer >= 35)
-            P_limit = 0.75;
-        else if (chassis_power_buffer < 35 && chassis_power_buffer >= 30)
-            P_limit = 0.5;
-        else if (chassis_power_buffer < 30 && chassis_power_buffer >= 20)
-            P_limit = 0.25;
-        else if (chassis_power > chassis_power_limit && chassis_power_buffer < 20 && chassis_power_buffer >= 10)
-            P_limit = 0.125;
-        else if (chassis_power > chassis_power_limit && chassis_power_buffer < 10 && chassis_power_buffer > 0)
-            P_limit = 0.05;
-        else
-            P_limit = 0.125;
+        } else {
+            P_limit = chassis_power_buffer / 50.f;
+        }
+        // else if (chassis_power_buffer < 50 && chassis_power_buffer >= 40)
+        //     P_limit = 0.9; // 近似于以一个线性来约束比例（为了保守可以调低Plimit，但会影响响应速度）
+        // else if (chassis_power_buffer < 40 && chassis_power_buffer >= 35)
+        //     P_limit = 0.75;
+        // else if (chassis_power_buffer < 35 && chassis_power_buffer >= 30)
+        //     P_limit = 0.5;
+        // else if (chassis_power_buffer < 30 && chassis_power_buffer >= 20)
+        //     P_limit = 0.25;
+        // else if (chassis_power > chassis_power_limit && chassis_power_buffer < 20 && chassis_power_buffer >= 10)
+        //     P_limit = 0.125;
+        // else if (chassis_power > chassis_power_limit && chassis_power_buffer < 10 && chassis_power_buffer > 0)
+        //     P_limit = 0.05;
+        // else
+        //     P_limit = 0.125;
     } else {
         P_limit = 1;
     }
