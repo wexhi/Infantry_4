@@ -55,15 +55,15 @@ void ChassisInit()
         .can_init_config.can_handle   = &hcan1,
         .controller_param_init_config = {
             .speed_PID = {
-                .Kp            = 1, // 4.5
-                .Ki            = 0, // 0
+                .Kp            = 4.7, // 4.5
+                .Ki            = 0.2, // 0
                 .Kd            = 0, // 0
                 .IntegralLimit = 5000,
                 .Improve       = PID_Trapezoid_Intergral | PID_Integral_Limit | PID_Derivative_On_Measurement,
                 .MaxOut        = 12000,
             },
             .current_PID = {
-                .Kp            = 1., // 0.4
+                .Kp            = 0.7, // 0.4
                 .Ki            = 0,  // 0
                 .Kd            = 0,
                 .IntegralLimit = 3000,
@@ -181,13 +181,16 @@ static void LimitChassisOutput()
             SuperCapSet(referee_data->PowerHeatData.buffer_energy, referee_data->GameRobotState.chassis_power_limit, 2); // 设置超级电容数据
             break;
         case SUPER_CAP_ON:
-            SuperCapSet(referee_data->PowerHeatData.buffer_energy, referee_data->GameRobotState.chassis_power_limit, 1); // 设置超级电容数据
+            SuperCapSet(referee_data->PowerHeatData.buffer_energy, referee_data->GameRobotState.chassis_power_limit, 3); // 设置超级电容数据
             break;
         default:
             break;
     }
 
-    if (super_cap->cap_data.status == 0 || super_cap->cap_data.voltage <= 12.f) {
+    if (chassis_cmd_recv.super_cap_mode == SUPER_CAP_OFF || super_cap->cap_data.voltage <= 12.f) {
+        // 当电容电量过低时强制关闭超电
+        chassis_cmd_recv.super_cap_mode = SUPER_CAP_OFF;
+        SuperCapSet(referee_data->PowerHeatData.buffer_energy, referee_data->GameRobotState.chassis_power_limit, 2); // 设置超级电容数据
         /*缓冲能量占比环，总体约束*/
         if (chassis_power_buffer >= 50) {
             P_limit = 1;
@@ -209,6 +212,8 @@ static void LimitChassisOutput()
         // else
         //     P_limit = 0.125;
     } else {
+        chassis_cmd_recv.super_cap_mode = SUPER_CAP_ON;
+        SuperCapSet(referee_data->PowerHeatData.buffer_energy, referee_data->GameRobotState.chassis_power_limit, 3); // 设置超级电容数据
         P_limit = 1;
     }
     ui_data.Chassis_Power_Data.chassis_power_mx = super_cap->cap_data.voltage;
@@ -284,8 +289,9 @@ void ChassisTask()
     // 根据电机的反馈速度和IMU(如果有)计算真实速度
     EstimateSpeed();
 
-    chassis_feedback_data.shoot_heat  = referee_data->PowerHeatData.shooter_17mm_1_barrel_heat;
-    chassis_feedback_data.shoot_limit = referee_data->GameRobotState.shooter_barrel_heat_limit;
+    chassis_feedback_data.shoot_heat   = referee_data->PowerHeatData.shooter_17mm_1_barrel_heat;
+    chassis_feedback_data.shoot_limit  = referee_data->GameRobotState.shooter_barrel_heat_limit;
+    chassis_feedback_data.bullet_speed = referee_data->ShootData.bullet_speed;
 
     ui_data.ui_mode          = chassis_cmd_recv.ui_mode;
     ui_data.chassis_mode     = chassis_cmd_recv.chassis_mode;

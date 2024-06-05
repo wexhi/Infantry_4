@@ -20,7 +20,7 @@
 #define VISION_SEND_TAIL   0xAAu // 视觉发送数据帧尾
 
 #define VISION_RECV_SIZE   13u // 当前为固定值,12字节
-#define VISION_SEND_SIZE   20u
+#define VISION_SEND_SIZE   24u
 
 // #pragma pack(1) // 1字节对齐
 
@@ -103,6 +103,7 @@ typedef struct
     float roll;             // rad
     float yaw;              // rad
     float pitch;            //
+    float bullet_speed;     // 弹速
     uint16_t checksum;      // crc16校验位 https://blog.csdn.net/ydyuse/article/details/105395368
     uint8_t tail;           // 尾帧校验位
 } Vision_Send_s;
@@ -149,13 +150,14 @@ Vision_Recv_s *VisionInit(UART_HandleTypeDef *video_usart_handle);
 void VisionSend();
 
 /**
- * @brief 设置发送给视觉的IMU数据
+ * @brief
  *
  * @param yaw
  * @param pitch
  * @param roll
+ * @param bullet_speed
  */
-void VisionSetAltitude(float yaw, float pitch, float roll);
+void VisionSetAltitude(float yaw, float pitch, float roll, float bullet_speed);
 
 void VisionSetEnergy(uint8_t is_energy_mode);
 

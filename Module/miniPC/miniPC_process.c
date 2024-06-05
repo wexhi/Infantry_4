@@ -75,17 +75,23 @@ static void VisionOfflineCallback(void *id)
 }
 
 /**
- * @brief 设置发送给视觉的IMU数据
+ * @brief
  *
  * @param yaw
  * @param pitch
  * @param roll
+ * @param bullet_speed
  */
-void VisionSetAltitude(float yaw, float pitch, float roll)
+void VisionSetAltitude(float yaw, float pitch, float roll, float bullet_speed)
 {
     vision_instance->send_data->yaw   = yaw;
     vision_instance->send_data->pitch = pitch;
     vision_instance->send_data->roll  = roll;
+    if (bullet_speed > 0) {
+        vision_instance->send_data->bullet_speed = bullet_speed;
+    } else {
+        vision_instance->send_data->bullet_speed = 25;
+    }
 }
 
 /**
@@ -118,11 +124,12 @@ static void SendProcess(Vision_Send_s *send, uint8_t *tx_buff)
     memcpy(&tx_buff[5], &send->roll, 4);
     memcpy(&tx_buff[9], &send->yaw, 4);
     memcpy(&tx_buff[13], &send->pitch, 4);
+    memcpy(&tx_buff[17], &send->bullet_speed, 4);
 
     /* 发送校验位 */
     send->checksum = Get_CRC16_Check_Sum(&tx_buff[0], VISION_SEND_SIZE - 3u, CRC_INIT);
-    memcpy(&tx_buff[17], &send->checksum, 2);
-    memcpy(&tx_buff[19], &send->tail, 1);
+    memcpy(&tx_buff[VISION_SEND_SIZE - 3u], &send->checksum, 2);
+    memcpy(&tx_buff[VISION_SEND_SIZE - 1u], &send->tail, 1);
 }
 
 /**
