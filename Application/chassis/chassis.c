@@ -168,13 +168,13 @@ static void LimitChassisOutput()
 {
     // 功率限制待添加
     uint16_t chassis_power_buffer = 0; // 底盘功率缓冲区
-    uint16_t chassis_power        = 0;
-    uint16_t chassis_power_limit  = 0;
+    // uint16_t chassis_power        = 0;
+    // uint16_t chassis_power_limit  = 0;
     float P_limit                 = 1; // 功率限制系数
 
     chassis_power_buffer = referee_data->PowerHeatData.buffer_energy;
-    chassis_power        = referee_data->PowerHeatData.chassis_power;
-    chassis_power_limit  = referee_data->GameRobotState.chassis_power_limit;
+    // chassis_power        = referee_data->PowerHeatData.chassis_power;
+    // chassis_power_limit  = referee_data->GameRobotState.chassis_power_limit;
 
     switch (chassis_cmd_recv.super_cap_mode) {
         case SUPER_CAP_OFF:

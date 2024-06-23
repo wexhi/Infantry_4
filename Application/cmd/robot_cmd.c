@@ -64,7 +64,7 @@ static float chassis_speed_buff;
 static void RemoteControlSet(void);  // 遥控器控制量设置
 static void MouseKeySet(void);       // 图传链路控制量设置
 static void RemoteMouseKeySet(void); // 通过遥控器的键鼠控制
-static void EmergencyHandler(void);
+static void EmergencyHandler(void) __attribute__((used));
 static void CalcOffsetAngle(void); // 计算云台和底盘的偏转角度
 
 static Robot_Status_e robot_state; // 机器人整体工作状态
