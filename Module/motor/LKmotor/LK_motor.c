@@ -78,6 +78,7 @@ LKMotor_Instance *LKMotorInit(Motor_Init_Config_s *config)
     config->can_init_config.tx_id               = 0x140 + config->can_init_config.tx_id;
     motor->motor_can_ins                        = CANRegister(&config->can_init_config);
 
+    motor->motor_type = config->motor_type;
     if (motor->motor_type == LK_MULTI_MOTOR) {
         sender_instance        = motor->motor_can_ins;
         sender_instance->tx_id = 0x280; //  修改tx_id为0x280,用于多电机发送,不用管其他LKMotorInstance的tx_id,它们仅作初始化用

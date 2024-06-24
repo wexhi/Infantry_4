@@ -69,7 +69,7 @@ typedef struct
     float mit_kp;
     float mit_kd; // ! kd = 0不能在kd = 0时，否则会出现震荡甚至失控 ！！！
     RampController_Instance angle_ramp;
-    Motor_Controll_Type_e control_type;
+    DMMotor_Controll_Type_e control_type;
     Motor_Working_Type_e stop_flag;
     CAN_Instance *motor_can_instace;
     Daemon_Instance *motor_daemon;

@@ -72,7 +72,13 @@ typedef enum {
     MOTOR_CONTROL_SPEED,
     MOTOR_CONTROL_E_MIT,
     MOTOR_CONTROL_MIT_ONLY_TORQUE,
-} Motor_Controll_Type_e;
+} DMMotor_Controll_Type_e;
+
+/* LK电机工作类型 */
+typedef enum {
+    LK_SINGLE_MOTOR = 0,
+    LK_MULTI_MOTOR,
+} LKMotor_Working_Type_e;
 
 /* 电机是否使用斜坡函数 */
 typedef enum {
@@ -154,7 +160,8 @@ typedef struct
     Motor_Controller_Init_s controller_param_init_config;
     Motor_Control_Setting_s controller_setting_init_config;
     Motor_Type_e motor_type;
-    Motor_Controll_Type_e control_type; // 电机工作类型,达妙电机专用
+    DMMotor_Controll_Type_e control_type;   // 电机工作类型,达妙电机专用
+    LKMotor_Working_Type_e motor_work_type; // LK电机工作类型，单电机或多电机
     CAN_Init_Config_s can_init_config;
 } Motor_Init_Config_s;
 

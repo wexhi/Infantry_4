@@ -15,11 +15,6 @@
 #define ECD_ANGLE_COEF_LK      (360.0f / 65536.0f)
 #define CURRENT_TORQUE_COEF_LK 0.003645f // 电流设定值转换成扭矩的系数,算出来的设定值除以这个系数就是扭矩值
 
-typedef enum {
-    LK_SINGLE_MOTOR = 0,
-    LK_MULTI_MOTOR,
-} LKMotor_Working_Type_e;
-
 typedef struct // 4010
 {
     uint8_t cmd_mode;         // 电机控制模式，详情查看PDF
