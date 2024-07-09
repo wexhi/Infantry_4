@@ -37,17 +37,11 @@ typedef struct
     LKMotor_Measure_t measure;
 
     Motor_Control_Setting_s motor_settings;
+    Motor_Controller_s motor_controller; // 电机控制器
 
-    float *other_angle_feedback_ptr; // 其他反馈来源的反馈数据指针
-    float *other_speed_feedback_ptr;
-    float *speed_feedforward_ptr;   // 速度前馈数据指针,可以通过此指针设置速度前馈值,或LQR等时作为速度状态变量的输入
-    float *current_feedforward_ptr; // 电流前馈指针
-    PID_Instance current_PID;
-    PID_Instance speed_PID;
-    PID_Instance angle_PID;
-    float pid_ref;
-    LKMotor_Working_Type_e motor_type; // 电机工作类型
-    Motor_Working_Type_e stop_flag;    // 启停标志
+    LKMotor_Working_Type_e motor_working_type; // 电机工作类型
+    Motor_Type_e motor_type;
+    Motor_Working_Type_e stop_flag; // 启停标志
 
     CAN_Instance *motor_can_ins;
 
