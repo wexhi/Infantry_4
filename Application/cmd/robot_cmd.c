@@ -138,8 +138,8 @@ void RobotCMDTask(void)
     {
         RemoteControlSet();
     } else if (switch_is_up(rc_data[TEMP].rc.switch_right)) {
-        // EmergencyHandler();
-        RemoteMouseKeySet();
+        EmergencyHandler();
+        // RemoteMouseKeySet();
     }
 
     // 设置视觉发送数据,还需增加加速度和角速度数据
