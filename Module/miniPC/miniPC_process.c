@@ -83,7 +83,7 @@ static void VisionOfflineCallback(void *id)
  * @param roll
  * @param bullet_speed
  */
-void VisionSetAltitude(float yaw, float pitch, float roll, float bullet_speed)
+void VisionSetAltitude(float yaw, float pitch, float roll, float bullet_speed, float yaw_speed)
 {
     vision_instance->send_data->yaw   = yaw;
     vision_instance->send_data->pitch = pitch;
@@ -126,6 +126,7 @@ static void SendProcess(Vision_Send_s *send, uint8_t *tx_buff)
     memcpy(&tx_buff[7], &send->yaw, 4);
     memcpy(&tx_buff[11], &send->pitch, 4);
     memcpy(&tx_buff[15], &send->bullet_speed, 4);
+    memcpy(&tx_buff[19], &send->yaw_speed, 4);
 
     /* 发送校验位 */
     send->checksum = Get_CRC16_Check_Sum(&tx_buff[0], VISION_SEND_SIZE - 3u, CRC_INIT);
@@ -160,9 +161,9 @@ Vision_Send_s *VisionSendRegister(Vision_Send_Init_Config_s *send_config)
     Vision_Send_s *send_data = (Vision_Send_s *)malloc(sizeof(Vision_Send_s));
     memset(send_data, 0, sizeof(Vision_Send_s));
 
-    send_data->header        = send_config->header;
-    send_data->detect_color  = send_config->detect_color;
-    send_data->tail          = send_config->tail;
+    send_data->header       = send_config->header;
+    send_data->detect_color = send_config->detect_color;
+    send_data->tail         = send_config->tail;
     return send_data;
 }
 
@@ -284,9 +285,9 @@ Vision_Recv_s *VisionInit(UART_HandleTypeDef *video_usart_handle)
     vision_instance->recv_data = VisionRecvRegister(&recv_config);
 
     Vision_Send_Init_Config_s send_config = {
-        .header        = VISION_SEND_HEADER,
-        .detect_color  = VISION_DETECT_COLOR_RED,
-        .tail          = VISION_SEND_TAIL,
+        .header       = VISION_SEND_HEADER,
+        .detect_color = VISION_DETECT_COLOR_RED,
+        .tail         = VISION_SEND_TAIL,
     };
     vision_instance->send_data = VisionSendRegister(&send_config);
     // 为master process注册daemon,用于判断视觉通信是否离线
