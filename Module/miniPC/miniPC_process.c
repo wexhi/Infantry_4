@@ -88,6 +88,7 @@ void VisionSetAltitude(float yaw, float pitch, float roll, float bullet_speed, f
     vision_instance->send_data->yaw   = yaw;
     vision_instance->send_data->pitch = pitch;
     vision_instance->send_data->roll  = roll;
+    vision_instance->send_data->yaw_speed = yaw_speed;
     if (bullet_speed > 0) {
         vision_instance->send_data->bullet_speed = bullet_speed;
     } else {

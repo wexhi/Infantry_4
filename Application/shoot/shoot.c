@@ -40,7 +40,7 @@ void ShootInit()
             },
             .current_PID = {
                 .Kp            = 0.7, // 0.7
-                .Ki            = 0.1,   // 0.1
+                .Ki            = 0.1, // 0.1
                 .Kd            = 0,
                 .Improve       = PID_Integral_Limit,
                 .IntegralLimit = 10000,
@@ -153,10 +153,11 @@ void ShootTask()
             break;
         // 三连发,如果不需要后续可能删除
         case LOAD_3_BULLET:
-            DJIMotorOuterLoop(loader, ANGLE_LOOP);                                                                     // 切换到速度环
-            DJIMotorSetRef(loader, loader->measure.total_angle + 3 * ONE_BULLET_DELTA_ANGLE * REDUCTION_RATIO_LOADER); // 增加3发
-            hibernate_time = DWT_GetTimeline_ms();                                                                     // 记录触发指令的时间
-            dead_time      = 300;                                                                                      // 完成3发弹丸发射的时间
+            DJIMotorOuterLoop(loader, ANGLE_LOOP);                                                                // 切换到速度环
+            loader_set_angle = loader->measure.total_angle - 3 * ONE_BULLET_DELTA_ANGLE * REDUCTION_RATIO_LOADER; // 控制量增加一发弹丸的角度
+            DJIMotorSetRef(loader, loader_set_angle);
+            hibernate_time = DWT_GetTimeline_ms(); // 记录触发指令的时间
+            dead_time      = 300;                  // 完成3发弹丸发射的时间
             break;
         // 连发模式,对速度闭环,射频后续修改为可变,目前固定为1Hz
         case LOAD_FAST:
@@ -174,8 +175,7 @@ void ShootTask()
             // ...
             break;
         default:
-            while (1)
-                ; // 未知模式,停止运行,检查指针越界,内存溢出等问题
+            while (1); // 未知模式,停止运行,检查指针越界,内存溢出等问题
     }
 
     // 确定是否开启摩擦轮,后续可能修改为键鼠模式下始终开启摩擦轮(上场时建议一直开启)
