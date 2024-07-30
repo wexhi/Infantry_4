@@ -85,9 +85,9 @@ static void VisionOfflineCallback(void *id)
  */
 void VisionSetAltitude(float yaw, float pitch, float roll, float bullet_speed, float yaw_speed)
 {
-    vision_instance->send_data->yaw   = yaw;
-    vision_instance->send_data->pitch = pitch;
-    vision_instance->send_data->roll  = roll;
+    vision_instance->send_data->yaw       = yaw;
+    vision_instance->send_data->pitch     = pitch;
+    vision_instance->send_data->roll      = roll;
     vision_instance->send_data->yaw_speed = yaw_speed;
     if (bullet_speed > 0) {
         vision_instance->send_data->bullet_speed = bullet_speed;
@@ -104,6 +104,23 @@ void VisionSetAltitude(float yaw, float pitch, float roll, float bullet_speed, f
 void VisionSetEnergy(uint8_t is_energy_mode)
 {
     vision_instance->send_data->is_energy_mode = is_energy_mode;
+}
+
+/**
+ * @brief 设置颜色
+ *
+ * @param detect_color 5-红色，6-蓝色
+ */
+void VisionSetDetectColor(Self_Color_e self_color)
+{
+    uint8_t detect_color = 0;
+    if (self_color == COLOR_BLUE) {
+        detect_color = 5; // 我方是蓝色，敌方是红色
+    }
+    if (self_color == COLOR_RED) {
+        detect_color = 6; // 我方是红色，敌方是蓝色
+    }
+    vision_instance->send_data->detect_color = detect_color;
 }
 
 /**
