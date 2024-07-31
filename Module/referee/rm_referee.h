@@ -68,6 +68,7 @@ typedef struct
     uint32_t arm_position_flag : 1;
     uint32_t super_cap_flag : 1;
     uint32_t vision_lock_flag : 1;
+    uint32_t vision_is_shoot_flag : 1;
 } Referee_Interactive_Flag_t;
 
 // 此结构体包含UI绘制与机器人车间通信的需要的其他非裁判系统数据
@@ -84,8 +85,9 @@ typedef struct
     Chassis_Power_Data_s Chassis_Power_Data; // 功率控制
     vision_mode_e vision_mode;               // 视觉模式
     vision_lock_mode_e vision_lock_mode;     // 视觉瞄准的目标
-    super_cap_mode_e super_cap_mode;         // 超级电容模式
-    uint8_t level;                           // 等级显示
+    vision_is_shoot_e vision_is_shoot;       // 视觉is_shoot
+    super_cap_mode_e super_cap_mode; // 超级电容模式
+    uint8_t level;                   // 等级显示
 
     // 上一次的模式，用于flag判断
     chassis_mode_e chassis_last_mode;
@@ -97,6 +99,7 @@ typedef struct
     Chassis_Power_Data_s Chassis_last_Power_Data;
     vision_mode_e vision_last_mode;
     vision_lock_mode_e vision_last_lock_mode;
+    vision_is_shoot_e vision_last_is_shoot;
     super_cap_mode_e super_cap_last_mode;
     uint8_t level_last;
     ui_mode_e ui_mode;

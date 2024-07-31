@@ -304,6 +304,7 @@ void ChassisTask()
     ui_data.lid_mode         = chassis_cmd_recv.lid_mode;
     ui_data.super_cap_mode   = chassis_cmd_recv.super_cap_mode;
     ui_data.loader_mode      = chassis_cmd_recv.loader_mode;
+    ui_data.vision_is_shoot  = chassis_cmd_recv.vision_is_shoot;
     // 推送反馈消息
 #ifdef ONE_BOARD
     PubPushMessage(chassis_pub, (void *)&chassis_feedback_data);

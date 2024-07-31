@@ -161,6 +161,11 @@ typedef enum {
     UI_REFRESH,
 } ui_mode_e;
 
+typedef enum {
+    IS_SHOOTING_ON,  // 使用视觉is_shooting参数
+    IS_SHOOTING_OFF, // 不使用视觉is_shooting参数
+} vision_is_shoot_e;
+
 // 机械臂模式设置
 typedef enum {
     ARM_ZERO_FORCE = 0,   // 电流零输入
@@ -227,6 +232,7 @@ typedef struct
     loader_mode_e loader_mode;           //  射频状态
     vision_mode_e vision_mode;           //  视觉状态
     vision_lock_mode_e vision_lock_mode; // 视觉锁定的目标状态
+    vision_is_shoot_e vision_is_shoot;   // 是否使用视觉is_shooting参数
     lid_mode_e lid_mode;                 //  弹舱盖状态
     //  ...
 

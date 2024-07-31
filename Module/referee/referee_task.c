@@ -57,7 +57,7 @@ void UITask()
 
 static Graph_Data_t UI_shoot_line[10]; // 射击准线
 static Graph_Data_t UI_Energy[3];      // 电容能量条
-static String_Data_t UI_State_sta[7];  // 机器人状态,静态只需画一次
+static String_Data_t UI_State_sta[8];  // 机器人状态,静态只需画一次
 static String_Data_t UI_State_dyn[7];  // 机器人状态,动态先add才能change
 static uint32_t shoot_line_location[10] = {540, 978, 490, 443, 425, 453, 433};
 // +18
@@ -89,7 +89,7 @@ void MyUIInit()
     UIGraphRefresh(&referee_recv_info->referee_id, 7, UI_shoot_line[0], UI_shoot_line[1], UI_shoot_line[2], UI_shoot_line[3], UI_shoot_line[4], UI_shoot_line[5], UI_shoot_line[6]);
 
     // 绘制车辆状态标志指示
-    UICharDraw(&UI_State_sta[0], "ss0", UI_Graph_ADD, 8, UI_Color_Main, 15, 2, 150, 800, "level:");
+    UICharDraw(&UI_State_sta[0], "ss0", UI_Graph_ADD, 8, UI_Color_Main, 15, 2, 150, 800, "E IS_sho:");
     UICharRefresh(&referee_recv_info->referee_id, UI_State_sta[0]);
     UICharDraw(&UI_State_sta[1], "ss1", UI_Graph_ADD, 8, UI_Color_Main, 15, 2, 100, 750, "C chassis:");
     UICharRefresh(&referee_recv_info->referee_id, UI_State_sta[1]);
@@ -107,7 +107,8 @@ void MyUIInit()
     // 由于初始化时xxx_last_mode默认为0，所以此处对应UI也应该设为0时对应的UI，防止模式不变的情况下无法置位flag，导致UI无法刷新
     // 等级显示，动态
     // UICharDraw(&UI_State_dyn[0], "sd0", UI_Graph_ADD, 8, UI_Color_Main, 21, 2, 270, 800, "1");
-    UICharDraw(&UI_State_dyn[0], "sd0", UI_Graph_ADD, 8, UI_Color_Main, 15, 2, 270, 800, UIGetLevel());
+    // UICharDraw(&UI_State_dyn[0], "sd0", UI_Graph_ADD, 8, UI_Color_Main, 15, 2, 270, 800, UIGetLevel());
+    UICharDraw(&UI_State_dyn[0], "sd5", UI_Graph_ADD, 8, UI_Color_Pink, 15, 2, 270, 550, Interactive_data->vision_is_shoot == IS_SHOOTING_ON ? "on " : "off");
     UICharRefresh(&referee_recv_info->referee_id, UI_State_dyn[0]);
     // UICharDraw(&UI_State_dyn[1], "sd1", UI_Graph_ADD, 8, UI_Color_Main, 15, 2, 270, 750, "fast     ");
     switch (Interactive_data->chassis_mode) {
@@ -176,8 +177,8 @@ void MyUIInit()
     UICharRefresh(&referee_recv_info->referee_id, UI_State_dyn[6]);
 
     // 底盘功率显示，静态
-    UICharDraw(&UI_State_sta[5], "ss5", UI_Graph_ADD, 7, UI_Color_Green, 18, 2, 620, 230, "Power:");
-    UICharRefresh(&referee_recv_info->referee_id, UI_State_sta[5]);
+    UICharDraw(&UI_State_sta[7], "ss5", UI_Graph_ADD, 7, UI_Color_Green, 18, 2, 620, 230, "Power:");
+    UICharRefresh(&referee_recv_info->referee_id, UI_State_sta[7]);
     // 能量条框
     UIRectangleDraw(&UI_Energy[0], "ss7", UI_Graph_ADD, 7, UI_Color_Green, 2, 720, 140, 1220, 180);
     UIGraphRefresh(&referee_recv_info->referee_id, 1, UI_Energy[0]);
@@ -240,41 +241,47 @@ static void RobotModeTest(Referee_Interactive_info_t *_Interactive_data) // 测�
     }
 }
 
-static char *UIGetLevel()
-{
-    switch (referee_recv_info->GameRobotState.robot_level) {
-        case 1:
-            return "1";
-        case 2:
-            return "2";
-        case 3:
-            return "3";
-        case 4:
-            return "4";
-        case 5:
-            return "5";
-        case 6:
-            return "6";
-        case 7:
-            return "7";
-        case 8:
-            return "8";
-        case 9:
-            return "9";
-        case 10:
-            return "10";
-    }
-    return "0";
-}
+// static char *UIGetLevel()
+// {
+//     switch (referee_recv_info->GameRobotState.robot_level) {
+//         case 1:
+//             return "1";
+//         case 2:
+//             return "2";
+//         case 3:
+//             return "3";
+//         case 4:
+//             return "4";
+//         case 5:
+//             return "5";
+//         case 6:
+//             return "6";
+//         case 7:
+//             return "7";
+//         case 8:
+//             return "8";
+//         case 9:
+//             return "9";
+//         case 10:
+//             return "10";
+//     }
+//     return "0";
+// }
 
 static void MyUIRefresh(referee_info_t *referee_recv_info, Referee_Interactive_info_t *_Interactive_data)
 {
     UIChangeCheck(_Interactive_data);
     // level
-    if (_Interactive_data->Referee_Interactive_Flag.level_flag == 1) {
-        UICharDraw(&UI_State_dyn[0], "sd0", UI_Graph_Change, 8, UI_Color_Main, 15, 2, 270, 800, UIGetLevel());
+    // if (_Interactive_data->Referee_Interactive_Flag.level_flag == 1) {
+    //     UICharDraw(&UI_State_dyn[0], "sd0", UI_Graph_Change, 8, UI_Color_Main, 15, 2, 270, 800, UIGetLevel());
+    //     UICharRefresh(&referee_recv_info->referee_id, UI_State_dyn[0]);
+    //     _Interactive_data->Referee_Interactive_Flag.level_flag = 0;
+    // }
+    // vision_is_shooting
+    if (_Interactive_data->Referee_Interactive_Flag.vision_is_shoot_flag == 1) {
+        UICharDraw(&UI_State_dyn[0], "sd5", UI_Graph_Change, 8, UI_Color_Pink, 15, 2, 270, 550, _Interactive_data->vision_is_shoot == IS_SHOOTING_ON ? "on " : "off");
         UICharRefresh(&referee_recv_info->referee_id, UI_State_dyn[0]);
-        _Interactive_data->Referee_Interactive_Flag.level_flag = 0;
+        _Interactive_data->Referee_Interactive_Flag.vision_is_shoot_flag = 0;
     }
     // chassis
     if (_Interactive_data->Referee_Interactive_Flag.chassis_flag == 1) {
@@ -431,5 +438,10 @@ static void UIChangeCheck(Referee_Interactive_info_t *_Interactive_data)
     if (_Interactive_data->super_cap_mode != _Interactive_data->super_cap_last_mode) {
         _Interactive_data->Referee_Interactive_Flag.super_cap_flag = 1;
         _Interactive_data->super_cap_last_mode                     = _Interactive_data->super_cap_mode;
+    }
+
+    if (_Interactive_data->vision_is_shoot != _Interactive_data->vision_last_is_shoot) {
+        _Interactive_data->Referee_Interactive_Flag.vision_is_shoot_flag = 1;
+        _Interactive_data->vision_last_is_shoot                          = _Interactive_data->vision_is_shoot;
     }
 }
